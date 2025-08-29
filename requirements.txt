@@ -1,0 +1,74 @@
+# Africa-USA Trade Intelligence Platform
+# Requirements for maximum ROI with free resources
+
+# Core MCP and Web Framework
+mcp>=1.0.0
+fastapi>=0.104.0
+uvicorn>=0.24.0
+streamlit>=1.28.0
+
+# Data Processing and Analysis
+pandas>=2.1.0
+numpy>=1.24.0
+requests>=2.31.0
+httpx>=0.25.0
+aiohttp>=3.9.0
+
+# Database and ORM
+sqlalchemy>=2.0.0
+alembic>=1.12.0
+psycopg2-binary>=2.9.0  # PostgreSQL driver
+
+# Social Media APIs
+tweepy>=4.14.0  # Twitter API
+python-linkedin>=0.9.4  # LinkedIn API (compatible version)
+instagrapi>=1.19.0  # Instagram API
+
+# Content Creation and NLP
+# openai>=1.3.0  # For content generation (will add when needed)
+transformers>=4.35.0  # Free NLP models
+beautifulsoup4>=4.12.0  # Web scraping
+selenium>=4.15.0  # Advanced web automation
+
+# Data Visualization
+plotly>=5.17.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
+
+# Task Scheduling and Automation
+apscheduler>=3.10.0
+celery>=5.3.0
+redis>=5.0.0
+
+# API and Web Security
+python-jose>=3.3.0
+passlib>=1.7.0
+python-multipart>=0.0.6
+
+# Environment and Configuration
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# Monitoring and Logging
+loguru>=0.7.0
+prometheus-client>=0.19.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+httpx>=0.25.0  # For testing async endpoints
+
+# Data Export and Reporting
+openpyxl>=3.1.0
+reportlab>=4.0.0
+jinja2>=3.1.0
+
+# Notifications
+python-telegram-bot>=20.7.0  # Free Telegram notifications
+sendgrid>=6.10.0  # Email notifications (free tier)
+
+# Development Tools
+black>=23.11.0  # Code formatting
+flake8>=6.1.0  # Code linting
+mypy>=1.7.0  # Type checking
