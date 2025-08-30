@@ -68,7 +68,7 @@ def get_census_trade_data(trade_type="imports", year="2023", month="12", country
         if trade_type == "exports":
             endpoint = "https://api.census.gov/data/timeseries/intltrade/exports/hs"
             params = {
-                "get": "E_COMMODITY,E_COMMODITY_LDESC,ALL_VAL_MO,ALL_VAL_YR",
+                "get": "E_COMMODITY,E_COMMODITY_LDESC,ALL_VAL_MO,ALL_VAL_YR,YEAR,MONTH",
                 "YEAR": year,
                 "MONTH": month
             }
@@ -77,22 +77,30 @@ def get_census_trade_data(trade_type="imports", year="2023", month="12", country
         else:
             endpoint = "https://api.census.gov/data/timeseries/intltrade/imports/hs"
             params = {
-                "get": "CTY_CODE,CTY_NAME,GEN_VAL_MO,CON_VAL_MO,E_COMMODITY,E_COMMODITY_LDESC",
+                "get": "CTY_CODE,CTY_NAME,GEN_VAL_MO,CON_VAL_MO,I_COMMODITY,I_COMMODITY_LDESC,YEAR,MONTH",
                 "YEAR": year,
                 "MONTH": month
             }
             if country_code:
                 params["CTY_CODE"] = country_code
             if commodity_code:
-                params["E_COMMODITY"] = commodity_code
+                params["I_COMMODITY"] = commodity_code
         
-        response = requests.get(endpoint, params=params)
+        # Add timeout and headers for better reliability
+        headers = {
+            "User-Agent": "Africa-USA Trade Intelligence Platform (Free World Trade Inc.)"
+        }
+        
+        response = requests.get(endpoint, params=params, headers=headers, timeout=30)
         if response.status_code == 200:
             data = response.json()
             return data
         else:
+            print(f"API request failed with status code: {response.status_code}")
+            print(f"Response content: {response.text[:200]}")
             return None
-    except:
+    except Exception as e:
+        print(f"Error fetching Census trade data: {str(e)}")
         return None
 
 def get_free_exchange_rates():
@@ -244,7 +252,7 @@ with tab1:
             
             with col4:
                 st.markdown(f"⚡ {opp['action']}")
-                if st.button(f"Contact Supplier #{i+1}", key=f"contact_{i}"):
+                if st.button(f"Contact Supplier #{i+1}", key=f"contact_{i}", width='content'):
                     st.success(f"Contacting supplier for {opp['product']}...")
 
 with tab2:
@@ -489,4 +497,4 @@ st.markdown("""
 if st.checkbox("Auto-refresh (5 min)"):
     import time
     time.sleep(300)
-    st.experimental_rerun()
+    st.rerun()
