@@ -137,7 +137,7 @@ africa-usa-trade-intelligence/
 ### Prerequisites
 - Python 3.8 or higher
 - Git
-- Free API keys (see setup guide)
+- 100% FREE API keys (see setup guide - NO PAID SERVICES REQUIRED)
 
 ### Installation
 ```bash
@@ -155,10 +155,13 @@ pip install -r requirements.txt
 
 # Copy environment template
 copy .env.example .env
-# Edit .env with your API keys
+# Edit .env with your 100% FREE API keys (NO PAID SERVICES)
 
 # Initialize database
 python scripts/init_database.py
+
+# Initialize data collection system
+python scripts/init_data_collection.py
 
 # Start MCP servers
 python src/mcp_servers/market_intelligence/server.py
@@ -174,9 +177,39 @@ python scripts/run_market_scan.py
 
 # Generate daily briefing
 python scripts/generate_briefing.py
+
+# Run automated data collection
+python scripts/automated_data_tracker.py
 ```
 
-## 📈 Performance Metrics
+## 📈 Automated Data Collection
+
+The platform now includes an automated data collection system that regularly fetches and stores trade data from the U.S. Census Bureau API:
+
+### Features:
+- **Daily Data Collection**: Automatically fetches trade data for key agricultural products
+- **Historical Data Storage**: Stores data in CSV format for trend analysis
+- **Key Product Tracking**: Monitors coffee, cocoa, cashews, and other priority products
+- **Country-Specific Data**: Tracks imports from key African trading partners
+- **Scheduled Automation**: Can be configured to run automatically
+
+### Data Collection Commands:
+```bash
+# Initialize the data collection system
+python scripts/init_data_collection.py
+
+# Run data collection manually
+python scripts/automated_data_tracker.py
+
+# Set up scheduled collection (see data/scheduled_task_setup.txt)
+```
+
+### Data Storage:
+- Data is stored in `data/census_data/` directory
+- Each data collection creates timestamped CSV files
+- Log files track collection history and issues
+
+## 📊 Performance Metrics
 
 ### Productivity Gains
 - **70% Time Savings** on market research
@@ -198,23 +231,24 @@ python scripts/generate_briefing.py
 
 ## 🛠️ API Integration
 
-### Free Data Sources Setup
+### 100% Free Data Sources Setup (NO PAID APIS)
 ```python
-# Market Intelligence APIs (All Free)
-CENSUS_API = "https://api.census.gov/data"  # US Trade Data
-WORLD_BANK_API = "https://api.worldbank.org"  # Commodity Prices
-OPENWEATHER_API = "https://api.openweathermap.org"  # Weather Data
-EXCHANGE_API = "https://api.exchangerate-api.com"  # Currency Rates
-NEWS_API = "https://newsapi.org/v2"  # News Intelligence
+# Market Intelligence APIs (All Completely Free)
+CENSUS_API = "https://api.census.gov/data"  # US Trade Data (No key required)
+WORLD_BANK_API = "https://api.worldbank.org"  # Commodity Prices (No key required)
+FEDERAL_RESERVE_API = "https://api.stlouisfed.org/fred"  # Economic Data (Free key)
+EXCHANGE_RATE_HOST = "https://api.exchangerate.host"  # Currency Rates (No key required)
+RSS_NEWS_FEEDS = "Multiple sources"  # News Intelligence (Free RSS)
+WEB_SCRAPING_SOURCES = "African commodity exchanges"  # Market Data (Free scraping)
 ```
 
-### Social Media APIs
+### Social Media APIs (Free Tiers ONLY)
 ```python
-# Social Platform Integration (Free Tiers)
-LINKEDIN_API = "https://api.linkedin.com/v2"  # Professional Network
-TWITTER_API = "https://api.twitter.com/2"  # Real-time Updates
-INSTAGRAM_API = "https://graph.instagram.com"  # Visual Content
-BUFFER_API = "https://api.bufferapp.com"  # Content Scheduling
+# Social Platform Integration (Free Tiers ONLY - No paid tiers)
+LINKEDIN_API = "https://api.linkedin.com/v2"  # Professional Network (Free developer access)
+TWITTER_API = "https://api.twitter.com/2"  # Real-time Updates (500K tweets/month free)
+INSTAGRAM_API = "https://graph.instagram.com"  # Visual Content (Free basic display)
+BUFFER_API = "https://api.bufferapp.com"  # Content Scheduling (Free tier: 3 accounts)
 ```
 
 ## 🎓 Expert Positioning Strategy

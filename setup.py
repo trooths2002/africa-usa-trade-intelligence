@@ -216,11 +216,11 @@ def display_next_steps():
     
     steps = [
         f"1. Activate virtual environment: {activation_cmd}",
-        "2. Edit .env file with your free API keys:",
-        "   - Get Census API key (optional): https://api.census.gov",
-        "   - Get Exchange Rate API key: https://exchangerate-api.com", 
-        "   - Get OpenWeather API key: https://openweathermap.org",
-        "   - Get News API key: https://newsapi.org",
+        "2. Edit .env file with your 100% FREE API keys:",
+        "   - US Census Bureau API (no key required): https://api.census.gov",
+        "   - World Bank API (no key required): https://api.worldbank.org",
+        "   - ExchangeRate.host API (no key required): https://exchangerate.host",
+        "   - Federal Reserve FRED API (free key): https://fred.stlouisfed.org",
         "3. Start MCP server: python src/mcp_servers/market_intelligence/server.py",
         "4. Launch dashboard: streamlit run src/web_app/dashboard/main.py",
         "5. Begin LinkedIn automation and content creation",
@@ -230,7 +230,7 @@ def display_next_steps():
         "🎯 12-Month Goal: #1 Africa-USA agriculture broker position",
         "",
         "💰 Expected ROI: 1000%+ within 12 months",
-        "💰 Technology cost: $0 for first 6 months"
+        "💰 Technology cost: $0 - 100% FREE"
     ]
     
     for step in steps:

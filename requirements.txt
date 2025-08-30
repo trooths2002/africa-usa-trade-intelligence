@@ -1,5 +1,5 @@
 # Africa-USA Trade Intelligence Platform
-# Requirements for maximum ROI with free resources
+# Requirements for 100% FREE operation - NO PAID APIs
 
 # Core MCP and Web Framework
 mcp>=1.0.0
@@ -19,16 +19,19 @@ sqlalchemy>=2.0.0
 alembic>=1.12.0
 psycopg2-binary>=2.9.0  # PostgreSQL driver
 
-# Social Media APIs
-tweepy>=4.14.0  # Twitter API
-python-linkedin>=0.9.4  # LinkedIn API (compatible version)
-instagrapi>=1.19.0  # Instagram API
-
-# Content Creation and NLP
-# openai>=1.3.0  # For content generation (will add when needed)
-transformers>=4.35.0  # Free NLP models
-beautifulsoup4>=4.12.0  # Web scraping
+# Web Scraping and Data Collection (FREE)
+beautifulsoup4>=4.12.0  # HTML parsing
 selenium>=4.15.0  # Advanced web automation
+feedparser>=6.0.10  # RSS feed parsing
+lxml>=4.9.0  # XML parsing
+
+# Social Media APIs (FREE TIERS ONLY)
+# python-linkedin>=0.9.4  # LinkedIn API (if needed)
+# tweepy>=4.14.0  # Twitter API (if needed)
+# instagrapi>=1.19.0  # Instagram API (if needed)
+
+# Content Creation and NLP (FREE)
+transformers>=4.35.0  # Free NLP models via Hugging Face
 
 # Data Visualization
 plotly>=5.17.0
@@ -57,18 +60,31 @@ prometheus-client>=0.19.0
 # Testing
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
-httpx>=0.25.0  # For testing async endpoints
 
 # Data Export and Reporting
 openpyxl>=3.1.0
 reportlab>=4.0.0
 jinja2>=3.1.0
 
-# Notifications
-python-telegram-bot>=20.7.0  # Free Telegram notifications
-sendgrid>=6.10.0  # Email notifications (free tier)
+# FREE Notifications ONLY
+python-telegram-bot>=20.7.0  # Telegram (100% free)
+# NO SendGrid - use SMTP instead
+# NO Twilio - use Telegram instead
+# NO OpenAI - use Hugging Face instead
 
-# Development Tools
-black>=23.11.0  # Code formatting
-flake8>=6.1.0  # Code linting
-mypy>=1.7.0  # Type checking
+# Email via SMTP (FREE)
+email-validator>=2.1.0
+
+# Additional free data sources
+yfinance>=0.2.22  # Free Yahoo Finance data
+
+# JSON processing for API responses
+json5>=0.9.14
+
+# NO PAID APIS:
+# ❌ openai (costs money after $5 credit)
+# ❌ sendgrid (limited free tier)
+# ❌ twilio (only trial credits)
+# ❌ newsapi (very limited free tier)
+# ❌ openweathermap (requires API key)
+# ❌ exchangerate-api (limited requests)

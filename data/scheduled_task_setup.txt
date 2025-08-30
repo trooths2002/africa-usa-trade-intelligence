@@ -1,0 +1,26 @@
+
+    
+To set up automated data collection on Windows:
+
+1. Open Task Scheduler (taskschd.msc)
+2. Create a new task with the following settings:
+   - General Tab:
+     * Name: AfricaTradeDataCollection
+     * Run whether user is logged on or not: Checked
+   - Triggers Tab:
+     * New Trigger: Daily at 2:00 AM
+   - Actions Tab:
+     * New Action:
+       - Program/script: python
+       - Add arguments: scripts/scheduled_data_collection.py
+       - Start in: [Your project directory]
+   - Conditions Tab:
+     * Wake the computer to run this task: Checked
+   - Settings Tab:
+     * Allow task to be run on demand: Checked
+     * If the task is not running, restart every: 1 minute
+     * Stop the task if it runs longer than: 1 hour
+
+Alternatively, you can run the scheduled collection script manually:
+python scripts/scheduled_data_collection.py
+
