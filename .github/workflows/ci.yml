@@ -1,0 +1,64 @@
+name: CI — tests, lint, security
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  checks:
+    name: Checks (lint, tests, pip-audit)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.10, 3.11]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install project dependencies
+        run: |
+          pip install -r requirements.txt
+          # Install tools used by CI
+          pip install ruff pip-audit
+
+      - name: Lint with ruff
+        run: |
+          # Fail the job on lint errors
+          ruff check .
+
+      - name: Run tests
+        run: |
+          pytest -q
+
+      - name: Run pip-audit (JSON output)
+        run: |
+          # Save pip-audit output to JSON and continue so we can decide failure in the next step
+          pip-audit --format=json -o pip_audit.json || true
+
+      - name: Fail if pip-audit found vulnerabilities
+        run: |
+          python - <<'PY'
+import json,sys
+try:
+    j = json.load(open('pip_audit.json'))
+except Exception:
+    print('No pip_audit.json produced; assuming pip-audit failed to run')
+    sys.exit(1)
+
+vulns = j.get('vulns') or []
+if vulns:
+    print(f"Found {len(vulns)} vulnerabilities:")
+    for v in vulns[:20]:
+        print(v.get('id') or v)
+    sys.exit(1)
+print('No dependency vulnerabilities found by pip-audit')
+PY
