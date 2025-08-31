@@ -43,7 +43,7 @@ try {
 
 # Check if Streamlit is installed
 try {
-    $StreamlitVersion = & python -c "import streamlit; print(f'Streamlit {streamlit.__version__}')"
+    $StreamlitVersion = & python -c "import streamlit; print("Streamlit " + streamlit.__version__)"
     Write-Host "✅ $StreamlitVersion is available" -ForegroundColor Green
 } catch {
     Write-Host "⚠️  Streamlit not found. Installing required packages..." -ForegroundColor Yellow

@@ -43,7 +43,7 @@ if %errorlevel% neq 0 (
 )
 
 REM Check if Streamlit is installed
-python -c "import streamlit; print(f'Streamlit {streamlit.__version__}')" >nul 2>&1
+python -c "import streamlit; print("Streamlit " + streamlit.__version__)" >nul 2>&1
 if %errorlevel% neq 0 (
     echo ⚠️  Streamlit not found. Installing required packages...
     pip install -r "%REQUIREMENTS_FILE%"
