@@ -211,11 +211,12 @@ with st.sidebar:
         st.metric("Followers", linkedin_stats.get("followers", "150"), "+8")
 
 # Main Dashboard
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "🔥 Live Opportunities", 
     "📈 Market Intelligence", 
     "🤝 Relationships", 
     "📱 Social Media", 
+    "👥 Buyer Funnel",
     "⚙️ Automation"
 ])
 
@@ -473,6 +474,124 @@ with tab4:
         st.metric("New Connections", "19", "+15%")
 
 with tab5:
+    st.markdown("## 👥 Buyer Funnel Tracking")
+    
+    # Load buyer funnel data
+    try:
+        with open("data/buyer_funnel.json", "r") as f:
+            buyer_data = json.load(f)
+    except FileNotFoundError:
+        # Create sample data if file doesn't exist
+        buyer_data = {
+            "buyer_tiers": {
+                "enterprise": {"name": "Enterprise Buyers"},
+                "mid_market": {"name": "Mid-Market Buyers"},
+                "small_business": {"name": "Small Business Buyers"},
+                "individual": {"name": "Individual Buyers"}
+            }
+        }
+    
+    # Display buyer tier overview
+    st.markdown("### 📊 Buyer Tier Overview")
+    tiers = list(buyer_data.get("buyer_tiers", {}).keys())
+    
+    # Sample metrics for each tier
+    tier_metrics = {
+        "enterprise": {"prospects": 12, "engaged": 8, "qualified": 5, "pipeline": "$1.2M"},
+        "mid_market": {"prospects": 35, "engaged": 22, "qualified": 14, "pipeline": "$850K"},
+        "small_business": {"prospects": 68, "engaged": 45, "qualified": 28, "pipeline": "$420K"},
+        "individual": {"prospects": 142, "engaged": 89, "qualified": 56, "pipeline": "$180K"}
+    }
+    
+    # Display metrics for each tier
+    cols = st.columns(4)
+    for i, tier_key in enumerate(tiers):
+        with cols[i]:
+            tier_info = buyer_data.get("buyer_tiers", {}).get(tier_key, {})
+            metrics = tier_metrics.get(tier_key, {})
+            st.markdown(f"#### {tier_info.get('name', tier_key.title())}")
+            st.metric("Prospects", metrics.get("prospects", 0))
+            st.metric("Engaged", metrics.get("engaged", 0))
+            st.metric("Qualified", metrics.get("qualified", 0))
+            st.metric("Pipeline", metrics.get("pipeline", "$0"))
+    
+    st.markdown("---")
+    
+    # Prospective buyers tracking
+    st.markdown("### 🎯 Prospective Buyers Tracking")
+    
+    # Sample prospective buyers data
+    prospective_buyers = [
+        {"name": "Unilever", "tier": "enterprise", "industry": "CPG", "status": "Engaged", "last_contact": "2025-08-28", "next_followup": "2025-09-04"},
+        {"name": "Whole Foods Market", "tier": "mid_market", "industry": "Retail", "status": "Qualified", "last_contact": "2025-08-29", "next_followup": "2025-09-05"},
+        {"name": "Local Coffee Roasters", "tier": "small_business", "industry": "Food Service", "status": "Prospect", "last_contact": "2025-08-25", "next_followup": "2025-09-01"},
+        {"name": "Organic Market Online", "tier": "individual", "industry": "E-commerce", "status": "Engaged", "last_contact": "2025-08-30", "next_followup": "2025-09-06"}
+    ]
+    
+    # Display prospective buyers in a table
+    df = pd.DataFrame(prospective_buyers)
+    st.dataframe(df, use_container_width=True)
+    
+    # Follow-up scheduler
+    st.markdown("### 📅 Follow-up Scheduler")
+    
+    # Sample upcoming follow-ups
+    upcoming_followups = [
+        {"prospect": "Unilever", "date": "2025-09-04", "action": "Share whitepaper on Africa-USA trade benefits"},
+        {"prospect": "Whole Foods Market", "date": "2025-09-05", "action": "Send sample products and case studies"},
+        {"prospect": "Local Coffee Roasters", "date": "2025-09-01", "action": "Offer special promotion for first order"},
+        {"prospect": "Organic Market Online", "date": "2025-09-06", "action": "Limited-time offer for first-time buyers"}
+    ]
+    
+    # Display upcoming follow-ups
+    followup_df = pd.DataFrame(upcoming_followups)
+    st.dataframe(followup_df, use_container_width=True)
+    
+    # Add new prospect form
+    st.markdown("### ➕ Add New Prospect")
+    with st.form("add_prospect_form"):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            prospect_name = st.text_input("Prospect Name")
+            tier = st.selectbox("Buyer Tier", ["Enterprise", "Mid-Market", "Small Business", "Individual"])
+        with col2:
+            industry = st.text_input("Industry")
+            status = st.selectbox("Status", ["Prospect", "Engaged", "Qualified"])
+        with col3:
+            last_contact = st.date_input("Last Contact Date")
+            next_followup = st.date_input("Next Follow-up Date")
+        
+        if st.form_submit_button("Add Prospect"):
+            st.success(f"Added {prospect_name} to buyer funnel!")
+    
+    st.markdown("---")
+    
+    # Performance metrics
+    st.markdown("### 📈 Buyer Funnel Performance")
+    
+    # Sample conversion rates
+    conversion_data = {
+        "Stage": ["Prospects", "Engaged", "Qualified", "Closed Deals"],
+        "Enterprise": [100, 67, 42, 25],
+        "Mid-Market": [100, 63, 40, 28],
+        "Small Business": [100, 66, 41, 32],
+        "Individual": [100, 63, 39, 29]
+    }
+    
+    conversion_df = pd.DataFrame(conversion_data)
+    st.dataframe(conversion_df, use_container_width=True)
+    
+    # Funnel visualization
+    st.markdown("#### Conversion Funnel Visualization")
+    funnel_data = pd.DataFrame({
+        "Stage": ["Prospects", "Engaged", "Qualified", "Closed"],
+        "Count": [257, 164, 103, 60]
+    })
+    
+    fig = px.funnel(funnel_data, x="Count", y="Stage", title="Overall Buyer Conversion Funnel")
+    st.plotly_chart(fig, use_container_width=True)
+
+with tab6:
     st.markdown("## ⚙️ Automation Control Center")
     
     col1, col2 = st.columns(2)

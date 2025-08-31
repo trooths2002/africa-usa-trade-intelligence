@@ -77,6 +77,8 @@ africa-usa-trade-intelligence/
 ├── requirements.txt
 ├── .env.example
 ├── docker-compose.yml
+├── start_dashboard.ps1          # One-click PowerShell script
+├── start_dashboard.bat           # One-click Batch script
 ├── src/
 │   ├── mcp_servers/
 │   │   ├── market_intelligence/
@@ -99,6 +101,7 @@ africa-usa-trade-intelligence/
 ├── data/
 │   ├── suppliers/
 │   ├── buyers/
+│   │   └── buyer_funnel.json     # Buyer funnel data
 │   └── market_intelligence/
 ├── tests/
 ├── docs/
@@ -131,6 +134,12 @@ africa-usa-trade-intelligence/
 - Automated outreach campaigns
 - Performance analytics
 - Risk monitoring and alerts
+
+### 5. **Buyer Funnel Management**
+- Four-tier buyer classification (Enterprise, Mid-Market, Small Business, Individual)
+- Personalized outreach content generation
+- Engagement tracking and analytics
+- Automated follow-up sequence scheduling
 
 ## 🚀 Quick Start
 
@@ -182,6 +191,24 @@ python scripts/generate_briefing.py
 # Run automated data collection
 python scripts/automated_data_tracker.py
 ```
+
+### One-Click Dashboard Access
+
+For Windows users, you can use the one-click solution to start the dashboard:
+
+- **PowerShell Script**: Run `start_dashboard.ps1`
+- **Batch File**: Run `start_dashboard.bat`
+
+Both scripts will automatically check for dependencies and start the dashboard at http://localhost:8501
+
+### Buyer Funnel Tracking
+
+The dashboard now includes a dedicated "Buyer Funnel" tab that provides:
+
+- Real-time tracking of prospects across all buyer tiers
+- Follow-up scheduling and management
+- Performance metrics and conversion rates
+- Prospective buyer pipeline visualization
 
 ## 📈 Automated Data Collection
 
@@ -290,6 +317,35 @@ python scripts/check_linkedin_setup.py
    - Policy commentary
    - Strategic insights
    - Innovation discussions
+
+## 👥 Buyer Funnel Management
+
+The platform includes a comprehensive buyer funnel management system to help you secure USA buyers across all tiers:
+
+### Buyer Tiers
+1. **Enterprise Buyers** ($100M+ revenue) - Large corporations like Unilever, Nestle
+2. **Mid-Market Buyers** ($10M-$100M revenue) - Companies like Whole Foods Market
+3. **Small Business Buyers** ($1M-$10M revenue) - Local coffee roasters, specialty distributors
+4. **Individual Buyers** (<$1M revenue) - Online resellers, restaurant owners
+
+### Key Features
+- Automated buyer tier identification based on company characteristics
+- Personalized outreach content generation for each tier
+- Engagement tracking and performance analytics
+- Automated follow-up sequence scheduling
+- Pipeline visualization and conversion rate monitoring
+
+### Buyer Funnel Commands
+```bash
+# Create buyer funnel
+python scripts/create_buyer_funnel_simple.py
+
+# Test buyer funnel tool
+python test_buyer_funnel.py
+
+# Demonstrate buyer funnel workflow
+python demonstrate_buyer_funnel.py
+```
 
 ## 🔧 Development Roadmap
 
