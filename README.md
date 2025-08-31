@@ -156,6 +156,7 @@ pip install -r requirements.txt
 # Copy environment template
 copy .env.example .env
 # Edit .env with your 100% FREE API keys (NO PAID SERVICES)
+# For LinkedIn integration, follow the setup guide in LINKEDIN_APP_SETUP.md
 
 # Initialize database
 python scripts/init_database.py
@@ -249,6 +250,18 @@ LINKEDIN_API = "https://api.linkedin.com/v2"  # Professional Network (Free devel
 TWITTER_API = "https://api.twitter.com/2"  # Real-time Updates (500K tweets/month free)
 INSTAGRAM_API = "https://graph.instagram.com"  # Visual Content (Free basic display)
 BUFFER_API = "https://api.bufferapp.com"  # Content Scheduling (Free tier: 3 accounts)
+```
+
+### LinkedIn API Setup
+To enable LinkedIn integration, follow the setup guide in [LINKEDIN_APP_SETUP.md](LINKEDIN_APP_SETUP.md):
+1. Create a LinkedIn Developer account
+2. Create a new app in the LinkedIn Developer Portal
+3. Add your credentials to the `.env` file
+4. Test the integration with the provided scripts
+
+You can also check your LinkedIn setup status with:
+```bash
+python scripts/check_linkedin_setup.py
 ```
 
 ## 🎓 Expert Positioning Strategy

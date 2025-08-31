@@ -35,6 +35,14 @@ from mcp.types import (
     TextContent
 )
 
+# Import buyer funnel tool functions
+from buyer_funnel_tool import (
+    identify_buyer_tier,
+    generate_personalized_outreach,
+    track_engagement_metrics,
+    schedule_follow_up_sequence
+)
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -492,6 +500,58 @@ async def handle_list_tools() -> list[Tool]:
                     }
                 },
                 "required": ["data_types"]
+            }
+        ),
+        Tool(
+            name="create_buyer_funnel",
+            description="Create and manage a comprehensive buyer funnel to secure USA buyers of every tier",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": ["identify_tier", "generate_outreach", "track_metrics", "schedule_follow_up"],
+                        "description": "Action to perform in the buyer funnel"
+                    },
+                    "company_revenue": {
+                        "type": "string",
+                        "description": "Company revenue range (for tier identification)"
+                    },
+                    "decision_process": {
+                        "type": "string",
+                        "description": "Decision process complexity (for tier identification)"
+                    },
+                    "deal_size": {
+                        "type": "string",
+                        "description": "Expected deal size (for tier identification)"
+                    },
+                    "tier": {
+                        "type": "string",
+                        "enum": ["enterprise", "mid_market", "small_business", "individual"],
+                        "description": "Buyer tier (for outreach generation and tracking)"
+                    },
+                    "company_name": {
+                        "type": "string",
+                        "description": "Name of the company (for personalized outreach)"
+                    },
+                    "industry": {
+                        "type": "string",
+                        "description": "Industry of the company (for personalized outreach)"
+                    },
+                    "metrics": {
+                        "type": "object",
+                        "description": "Engagement metrics data (for tracking)"
+                    },
+                    "prospect_name": {
+                        "type": "string",
+                        "description": "Name of the prospect (for follow-up scheduling)"
+                    },
+                    "initial_contact_date": {
+                        "type": "string",
+                        "description": "Date of initial contact (YYYY-MM-DD, for follow-up scheduling)"
+                    }
+                },
+                "required": ["action"]
             }
         )
     ]
@@ -1039,6 +1099,39 @@ Free World Trade Inc. | Connecting Continents Through Commerce
             }
             
             return [TextContent(type="text", text=json.dumps(collected_data, indent=2))]
+        
+        elif name == "create_buyer_funnel":
+            action = arguments.get("action")
+            
+            if action == "identify_tier":
+                company_revenue = arguments.get("company_revenue", "")
+                decision_process = arguments.get("decision_process", "")
+                deal_size = arguments.get("deal_size", "")
+                tier = identify_buyer_tier(company_revenue, decision_process, deal_size)
+                return [TextContent(type="text", text=json.dumps({"tier": tier}, indent=2))]
+            
+            elif action == "generate_outreach":
+                tier = arguments.get("tier")
+                company_name = arguments.get("company_name", "")
+                industry = arguments.get("industry", "")
+                outreach = generate_personalized_outreach(tier, company_name, industry)
+                return [TextContent(type="text", text=json.dumps(outreach, indent=2))]
+            
+            elif action == "track_metrics":
+                tier = arguments.get("tier")
+                metrics = arguments.get("metrics", {})
+                analysis = track_engagement_metrics(tier, metrics)
+                return [TextContent(type="text", text=json.dumps(analysis, indent=2))]
+            
+            elif action == "schedule_follow_up":
+                tier = arguments.get("tier")
+                prospect_name = arguments.get("prospect_name", "")
+                initial_contact_date = arguments.get("initial_contact_date", "")
+                follow_up = schedule_follow_up_sequence(tier, prospect_name, initial_contact_date)
+                return [TextContent(type="text", text=json.dumps(follow_up, indent=2))]
+            
+            else:
+                return [TextContent(type="text", text=f"Unknown action for create_buyer_funnel: {action}")]
         
         else:
             return [TextContent(type="text", text=f"Unknown tool: {name}")]

@@ -81,6 +81,9 @@ yfinance>=0.2.22  # Free Yahoo Finance data
 # JSON processing for API responses
 json5>=0.9.14
 
+# OAuth support for social media APIs
+requests-oauthlib>=1.3.1
+
 # NO PAID APIS:
 # ❌ openai (costs money after $5 credit)
 # ❌ sendgrid (limited free tier)

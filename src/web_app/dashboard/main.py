@@ -26,6 +26,12 @@ import feedparser
 import time
 import random
 
+# Add LinkedIn API import at the top with other imports
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+from src.apis.linkedin_api import get_linkedin_profile, get_linkedin_network_stats, share_linkedin_post
+
 # Page configuration
 st.set_page_config(
     page_title="Africa-USA Trade Intelligence | Terrence Dupree",
@@ -188,6 +194,21 @@ with st.sidebar:
     with col2:
         st.metric("LinkedIn Connections", "284", "+15")
         st.metric("Deal Pipeline", "$2.3M", "+$450K")
+    
+    # LinkedIn Profile Section
+    st.markdown("### 👤 LinkedIn Profile")
+    linkedin_profile = get_linkedin_profile()
+    if linkedin_profile:
+        st.markdown(f"**{linkedin_profile.get('firstName', 'Terrence')} {linkedin_profile.get('lastName', 'Dupree')}**")
+        st.markdown(f"*{linkedin_profile.get('headline', 'Africa Coverage Specialist')}*")
+        st.markdown(f"📍 {linkedin_profile.get('location', 'Addis Ababa, Ethiopia')}")
+    
+    # LinkedIn Network Stats
+    linkedin_stats = get_linkedin_network_stats()
+    if linkedin_stats:
+        st.markdown("### 🌐 LinkedIn Network")
+        st.metric("Connections", linkedin_stats.get("connections", "284"), "+15")
+        st.metric("Followers", linkedin_stats.get("followers", "150"), "+8")
 
 # Main Dashboard
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
@@ -375,59 +396,81 @@ with tab3:
                 st.divider()
 
 with tab4:
-    st.markdown("## 📱 Social Media Command Center")
+    st.markdown("## 📱 Social Media Automation")
+    
+    # LinkedIn Section
+    st.markdown("### LinkedIn")
+    
+    # Check if LinkedIn credentials are available
+    import os
+    linkedin_client_id = os.getenv("LINKEDIN_CLIENT_ID")
+    linkedin_client_secret = os.getenv("LINKEDIN_CLIENT_SECRET")
+    
+    if not linkedin_client_id or not linkedin_client_secret:
+        st.info("ℹ️ LinkedIn API credentials not found. Follow the setup guide in LINKEDIN_APP_SETUP.md to enable full LinkedIn integration.")
+        st.markdown("[📘 LinkedIn App Setup Guide](./LINKEDIN_APP_SETUP.md)")
+    elif linkedin_client_id and not os.getenv("LINKEDIN_ACCESS_TOKEN"):
+        st.info("ℹ️ LinkedIn Client ID found. Product access granted for 'Share on LinkedIn'. Waiting for OAuth scopes to appear in interface (10-15 minutes after product approval).")
+        st.markdown("[📘 LinkedIn App Setup Guide](./LINKEDIN_APP_SETUP.md)")
+    
+    # LinkedIn Profile Card
+    col1, col2 = st.columns([1, 3])
+    with col1:
+        st.image("https://via.placeholder.com/150x150/0077b5/white?text=TD", width=100)
+    with col2:
+        st.markdown("### Terrence Dupree")
+        st.markdown("**Africa Coverage Specialist | Free World Trade Inc.**")
+        st.markdown("*Building bridges between African agriculture and US markets*")
+        st.markdown("📍 Addis Ababa, Ethiopia • 🌐 284 connections")
+    
+    # LinkedIn Post Composer
+    st.markdown("#### 📝 Compose LinkedIn Post")
+    post_content = st.text_area(
+        "Share market insights and trade opportunities",
+        placeholder="Share your latest findings on Africa-USA agricultural trade...",
+        height=150
+    )
     
     col1, col2 = st.columns(2)
-    
     with col1:
-        st.markdown("### 📊 Performance Metrics")
-        
-        social_metrics = pd.DataFrame({
-            'Platform': ['LinkedIn', 'Twitter', 'Instagram', 'YouTube'],
-            'Followers': [1284, 3567, 892, 245],
-            'Daily Growth': ['+15', '+23', '+8', '+3'],
-            'Engagement': ['4.2%', '2.8%', '6.1%', '3.5%']
-        })
-        st.dataframe(social_metrics, use_container_width=True)
-        
-        st.markdown("### 🎯 Content Calendar")
-        st.info("📅 Today: Market Intelligence Post (LinkedIn)")
-        st.info("📅 Tomorrow: Supplier Spotlight (Instagram)")  
-        st.info("📅 Thursday: AGOA Education Thread (Twitter)")
-        
-        if st.button("Generate Content Ideas"):
-            st.success("Content ideas generated for next week!")
+        if st.button("📤 Share on LinkedIn"):
+            if post_content:
+                success = share_linkedin_post(post_content)
+                if success:
+                    st.success("✅ Post shared successfully!")
+                else:
+                    st.info("ℹ️ Post would be shared. Product access granted for 'Share on LinkedIn'. Waiting for OAuth scopes to appear in interface.")
+            else:
+                st.warning("⚠️ Please enter some content to share")
     
     with col2:
-        st.markdown("### 📝 Content Generator")
-        
-        content_type = st.selectbox("Content Type", [
-            "LinkedIn Post", "Twitter Thread", "Instagram Caption", "Blog Article"
-        ])
-        
-        topic = st.selectbox("Topic", [
-            "Market Intelligence", "Supplier Spotlight", "AGOA Benefits", 
-            "Success Story", "Educational Content"
-        ])
-        
-        if st.button("Generate Content"):
-            st.markdown("### Generated Content:")
-            st.markdown("""
-            🌍 AFRICA TRADE INSIGHT: Coffee Market Analysis
-            
-            Latest data shows Ethiopian specialty coffee imports up 35% YoY. 
-            As Africa specialist at Free World Trade Inc., I'm seeing unprecedented 
-            opportunities for US buyers willing to build direct relationships.
-            
-            Key insights:
-            📈 Premium grades commanding 40%+ premiums
-            📈 AGOA benefits creating 15-25% cost advantages
-            📈 Quality certifications reaching international standards
-            
-            What questions do you have about African coffee sourcing?
-            
-            #AfricaTrade #AGOA #Coffee #FreeWorldTrade
-            """)
+        post_templates = [
+            "Just identified a 35% arbitrage opportunity in Ethiopian coffee exports to the US market. #AgriTrade #AfricaUSA",
+            "New AGOA regulations could impact cashew exports from West Africa. Analysis coming soon. #TradePolicy #AGOA",
+            "Connecting African suppliers with US buyers for premium organic products. #SupplyChain #OrganicTrade"
+        ]
+        template = st.selectbox("Quick Templates", post_templates)
+        if st.button("📝 Use Template"):
+            st.session_state.post_content = template
+    
+    # LinkedIn Analytics
+    st.markdown("#### 📊 LinkedIn Performance")
+    chart_data = pd.DataFrame({
+        'Week': ['W1', 'W2', 'W3', 'W4'],
+        'Engagement': [24, 32, 28, 45],
+        'Reach': [240, 320, 280, 450],
+        'Connections': [12, 15, 18, 19]
+    })
+    
+    st.bar_chart(chart_data.set_index('Week'))
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Weekly Engagement", "45", "+12%")
+    with col2:
+        st.metric("Post Reach", "450", "+8%")
+    with col3:
+        st.metric("New Connections", "19", "+15%")
 
 with tab5:
     st.markdown("## ⚙️ Automation Control Center")
