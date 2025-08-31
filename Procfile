@@ -1,0 +1,1 @@
+web: streamlit run src/web_app/dashboard/main.py --server.port=$PORT

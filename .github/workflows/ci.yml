@@ -39,26 +39,8 @@ jobs:
         run: |
           pytest -q
 
-      - name: Run pip-audit (JSON output)
-        run: |
-          # Save pip-audit output to JSON and continue so we can decide failure in the next step
-          pip-audit --format=json -o pip_audit.json || true
-
-      - name: Fail if pip-audit found vulnerabilities
-        run: |
-          python - <<'PY'
-import json,sys
-try:
-    j = json.load(open('pip_audit.json'))
-except Exception:
-    print('No pip_audit.json produced; assuming pip-audit failed to run')
-    sys.exit(1)
-
-vulns = j.get('vulns') or []
-if vulns:
-    print(f"Found {len(vulns)} vulnerabilities:")
-    for v in vulns[:20]:
-        print(v.get('id') or v)
-    sys.exit(1)
-print('No dependency vulnerabilities found by pip-audit')
-PY
+      - name: Run pip-audit
+        # Let pip-audit exit non-zero if vulnerabilities are found so CI fails fast
+          run: |
+            # Run pip-audit and fail the job if vulnerabilities are found
+            pip-audit

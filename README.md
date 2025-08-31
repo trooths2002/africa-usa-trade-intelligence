@@ -1,9 +1,44 @@
-# Africa-USA Agriculture Trade Intelligence Platform
-## Free World Trade Inc. - Terrence Dupree's Global Broker Dominance System
+# Africa-USA Trade Intelligence Platform
+
+## Overview
+This platform provides real-time market intelligence and arbitrage opportunities for Africa-USA agricultural trade. It's designed to help Terrence Dupree become the #1 Africa-USA agriculture broker globally.
+
+## Features
+- Live market data and arbitrage opportunities
+- Supplier and buyer intelligence
+- Social media automation controls
+- Performance analytics
+- Expert positioning tools
+
+## Deployment Instructions
+
+### For Streamlit Community Cloud:
+1. Fork this repository to your GitHub account
+2. Go to [Streamlit Community Cloud](https://streamlit.io/cloud)
+3. Click "New app"
+4. Select your forked repository
+5. Set the main file path to: `src/web_app/dashboard/main.py`
+6. Click "Deploy"
+
+### Local Development:
+1. Clone the repository
+2. Install dependencies: `pip install -r requirements.txt`
+3. Run the dashboard: `streamlit run src/web_app/dashboard/main.py`
+
+## Technology Stack
+- Python 3.8+
+- Streamlit for the dashboard
+- MCP (Model Context Protocol) for intelligence servers
+- Free APIs (US Census Bureau, World Bank, etc.)
+- PostgreSQL for data storage
+
+## Requirements
+All dependencies are listed in `requirements.txt`. The platform uses only free resources and APIs.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-green.svg)](https://modelcontextprotocol.io/)
+[![CI](https://github.com/trooths2002/africa-usa-trade-intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/trooths2002/africa-usa-trade-intelligence/actions/workflows/ci.yml)
 
 **Transform into the world's #1 Africa-to-USA agriculture broker through intelligent automation and expert positioning**
 
