@@ -1,1 +1,1 @@
-web: streamlit run src/web_app/dashboard/main.py --server.port=$PORT
+web: streamlit run src/web_app/dashboard/deployed_main.py --server.port=$PORT
