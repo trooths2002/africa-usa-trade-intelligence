@@ -95,7 +95,9 @@ jobs:
           console.log(`Added labels: ${labels.join(', ')}`);
 
     - name: Create incident alert for critical issues
-      if: (github.event.action == 'opened' || github.event_name == 'workflow_call') && (contains(github.event.issue.labels.*.name, 'severity: critical') || github.event.inputs.severity == 'critical')
+      if: |
+        (github.event.action == 'opened' || github.event_name == 'workflow_call') && 
+        (contains(github.event.issue.labels.*.name, 'severity: critical') || github.event.inputs.severity == 'critical')
       run: |
         echo "🚨 CRITICAL INCIDENT DETECTED 🚨"
         echo "Issue: ${{ github.event.issue.html_url || 'workflow_call' }}"
@@ -130,7 +132,9 @@ jobs:
         echo "Critical incident alert created"
 
     - name: Send Slack notification (simulate)
-      if: contains(github.event.issue.labels.*.name, 'severity: critical') || github.event.inputs.severity == 'critical'
+      if: |
+        contains(github.event.issue.labels.*.name, 'severity: critical') || 
+        github.event.inputs.severity == 'critical'
       run: |
         echo "🔔 Would send Slack notification for critical incident:"
         echo "Channel: #incidents"
