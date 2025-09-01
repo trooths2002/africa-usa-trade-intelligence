@@ -9,6 +9,11 @@ import requests
 import pandas as pd
 import plotly.express as px
 import time
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Page configuration
 st.set_page_config(
@@ -43,8 +48,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# API Configuration
-API_BASE_URL = "http://localhost:8000"
+# API Configuration - Use environment variable or default to Render deployment
+API_BASE_URL = os.getenv("STREAMLIT_API_URL", "https://africa-usa-trade-intelligence.onrender.com")
 
 # Main Header
 st.markdown("""
@@ -60,11 +65,14 @@ with st.expander("📡 API Service Status", expanded=False):
         response = requests.get(f"{API_BASE_URL}/health", timeout=5)
         if response.status_code == 200:
             status_data = response.json()
-            st.success(f"✅ API Service Online - {status_data['overall_status']}")
+            st.success(f"✅ API Service Online - Status: {status_data['status']}")
+            st.info(f"API Endpoint: {API_BASE_URL}")
         else:
             st.error("❌ API Service Unreachable")
+            st.info(f"Attempting to connect to: {API_BASE_URL}")
     except Exception as e:
         st.error(f"❌ API Service Unreachable: {str(e)}")
+        st.info(f"Attempting to connect to: {API_BASE_URL}")
 
 # Custom Report Generator
 st.markdown("## 📊 Custom Market Intelligence Report")
@@ -198,54 +206,3 @@ def get_simulated_arbitrage_opportunities():
                 "net_margin_estimate": "33%",
                 "monthly_volume_potential": "50,000 kg",
                 "revenue_potential": "445,000 USD/month",
-                "commission_potential": "22,250 USD/month",
-                "agoa_eligible": True,
-                "certification_premiums": ["SCA 85+ Score: +25%", "Direct Trade: +20%"],
-                "risk_level": "Low",
-                "action_required": "PRIORITY - Contact Kenya Coffee Board",
-                "buyer_targets": ["Specialty coffee roasters", "Hotel chains"]
-            }
-        ]
-    }
-
-# Try to get real data from API, fallback to simulated data
-opportunities_data = get_simulated_arbitrage_opportunities()
-try:
-    # In a real implementation, this would call the MCP server or API
-    # For now, we'll use the simulated data but show that we're trying to get real data
-    pass
-except:
-    pass
-
-opportunities = opportunities_data["high_priority_opportunities"]
-
-# Summary metrics
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.metric("Opportunities", len(opportunities))
-with col2:
-    total_commission = sum(float(opp["commission_potential"].split()[0].replace(",", "")) for opp in opportunities)
-    st.metric("Monthly Commission Potential", f"${total_commission:,.0f}K")
-with col3:
-    total_revenue = sum(float(opp["revenue_potential"].split()[0].replace(",", "")) for opp in opportunities)
-    st.metric("Monthly Revenue Potential", f"${total_revenue:,.0f}K")
-
-# Detailed opportunities
-for i, opp in enumerate(opportunities, 1):
-    with st.expander(f"🔥 Opportunity #{i}: {opp['product']}", expanded=i==1):
-        st.markdown(f"""
-        <div class="opportunity-card">
-            <h3>{opp['product']}</h3>
-            <p><strong>Supplier Country:</strong> {opp['supplier_country']}</p>
-            <p><strong>FOB Price:</strong> {opp['fob_price']}</p>
-            <p><strong>US Market Price:</strong> {opp['us_market_price']}</p>
-            <p><strong>Gross Margin:</strong> {opp['gross_margin']}</p>
-            <p><strong>Net Margin Estimate:</strong> {opp['net_margin_estimate']}</p>
-            <p><strong>Monthly Volume Potential:</strong> {opp['monthly_volume_potential']}</p>
-            <p><strong>Revenue Potential:</strong> {opp['revenue_potential']}</p>
-            <p><strong>Commission Potential:</strong> {opp['commission_potential']}</p>
-            <p><strong>Action Required:</strong> {opp['action_required']}</p>
-            <p><strong>Target Buyers:</strong> {', '.join(opp['buyer_targets'])}</p>
-        </div>
-        """, unsafe_allow_html=True)
-

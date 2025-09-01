@@ -125,6 +125,12 @@ See [STANDARD_ARCHITECTURE.md](STANDARD_ARCHITECTURE.md) for detailed architectu
    pip install -r src/requirements.txt
    ```
 
+3. Configure environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+   Edit the `.env` file to set your configuration, including the API URL for the Streamlit dashboard.
+
 3. Start all services:
    ```bash
    python src/main.py
@@ -169,6 +175,7 @@ See [STANDARD_ARCHITECTURE.md](STANDARD_ARCHITECTURE.md) for detailed architectu
 - Real-time data visualization
 - Custom report generation interface
 - African market intelligence display
+- Configurable API endpoint via environment variables (STREAMLIT_API_URL)
 
 ### 2. FastAPI Server (`src/api/main.py`)
 - RESTful API endpoints for all services
