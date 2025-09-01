@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: africa-usa-trade-intelligence
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn health_check:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.8
