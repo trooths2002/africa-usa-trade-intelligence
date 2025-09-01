@@ -1,0 +1,91 @@
+name: CI/CD Pipeline for Africa-USA Trade Intelligence Platform
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, "3.10", "3.11"]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r src/requirements.txt
+
+    - name: Test API server
+      run: |
+        # Start the API server in the background
+        python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000 &
+        sleep 10
+        # Test health endpoint
+        curl -f http://localhost:8000/health || exit 1
+
+    - name: Test data collection
+      run: |
+        python -c "from src.data.collector import DataCollector; collector = DataCollector(); print(collector.get_census_data())"
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Deploy to Streamlit Cloud
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: Install Streamlit
+      run: |
+        pip install streamlit
+
+    - name: Create deployment package
+      run: |
+        mkdir deployment
+        cp -r src/dashboard/app.py deployment/
+        cp -r src/requirements.txt deployment/
+        echo "Deployed on $(date)" > deployment/DEPLOYMENT_TIME
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./deployment
+
+  monitor:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r src/requirements.txt
+
+    - name: Run health checks
+      run: |
+        python -c "from src.monitoring.health import HealthMonitor; monitor = HealthMonitor(); print(monitor.check_all_services())"

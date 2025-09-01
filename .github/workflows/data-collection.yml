@@ -1,0 +1,83 @@
+name: Automated Data Collection
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  collect-trade-data:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r src/requirements.txt
+
+    - name: Collect Census Data
+      run: |
+        python -c "
+from src.data.collector import DataCollector
+import json
+
+collector = DataCollector()
+
+# Collect data for key commodities
+coffee_data = collector.get_census_data('imports', '0901')
+cocoa_data = collector.get_census_data('imports', '1801')
+cashews_data = collector.get_census_data('imports', '0801')
+
+print('Collected data for coffee, cocoa, and cashews')
+print(f'Coffee data points: {len(coffee_data.get(\"data\", []))}')
+print(f'Cocoa data points: {len(cocoa_data.get(\"data\", []))}')
+print(f'Cashews data points: {len(cashews_data.get(\"data\", []))}')
+"
+
+    - name: Collect Commodity Prices
+      run: |
+        python -c "
+from src.data.collector import DataCollector
+
+collector = DataCollector()
+prices = collector.get_commodity_prices()
+
+print('Current commodity prices:')
+for commodity, price in prices.get('prices', {}).items():
+    print(f'{commodity}: {price}')
+"
+
+    - name: Collect Exchange Rates
+      run: |
+        python -c "
+from src.data.collector import DataCollector
+
+collector = DataCollector()
+rates = collector.get_exchange_rates()
+
+print('Current exchange rates:')
+for currency, rate in rates.get('rates', {}).items():
+    print(f'{currency}: {rate}')
+"
+
+    - name: Update Data Repository
+      run: |
+        # Create a data update log
+        echo "# Data Collection Log" > data_collection_log.md
+        echo "Collection time: $(date)" >> data_collection_log.md
+        echo "Status: Success" >> data_collection_log.md
+        
+        # Commit the log
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add data_collection_log.md
+        git commit -m "Automated data collection log" || echo "No changes to commit"
+        git push
