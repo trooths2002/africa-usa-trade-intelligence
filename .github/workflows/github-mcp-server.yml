@@ -38,9 +38,8 @@ jobs:
       - name: Test API Server Connection
         run: |
           echo "Starting API server in the background"
-          # Set PYTHONPATH and run API server as module
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-          python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 &
+          # Run API server with proper module path
+          python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000 &
           sleep 5
           echo "API server started on port 8000"
 

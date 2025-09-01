@@ -1,17 +1,25 @@
-#!/usr/bin/env python3
-"""
-API Gateway for Africa-USA Trade Intelligence Platform
-Centralized API with caching and monitoring
-"""
+import sys
+import os
 
-import uvicorn
+# Add the parent directory to the path to make relative imports work
+# when running this script directly
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from fastapi import FastAPI
 from typing import Dict, Any, Optional
 import time
 import uvicorn
-from src.data.collector import DataCollector
-from src.intelligence.server import IntelligenceServer
-from src.monitoring.health import HealthMonitor
+
+# Try relative imports first, then absolute imports
+try:
+    from .data.collector import DataCollector
+    from .intelligence.server import IntelligenceServer
+    from .monitoring.health import HealthMonitor
+except ImportError:
+    # Fallback to absolute imports when running as script
+    from data.collector import DataCollector
+    from intelligence.server import IntelligenceServer
+    from monitoring.health import HealthMonitor
 
 app = FastAPI(title="Africa-USA Trade Intelligence API", version="1.0.0")
 
