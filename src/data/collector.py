@@ -6,6 +6,7 @@ import pandas as pd
 from typing import Dict, Any, Optional
 import time
 from datetime import datetime
+import json
 
 class DataCollector:
     def __init__(self):
@@ -112,7 +113,75 @@ class DataCollector:
         """Cache data with timestamp"""
         self.cache[key] = data
         self.cache_expiry[key] = time.time()
-
+    
+    def get_african_exchange_data(self) -> Dict[str, Any]:
+        """Get data from African commodity exchanges"""
+        cache_key = "african_exchanges"
+        if self._is_cache_valid(cache_key):
+            return self.cache[cache_key]
+        
+        # Sample data for African exchanges
+        data = {
+            "exchanges": {
+                "NADEX": {
+                    "location": "Nigeria",
+                    "commodities": ["cocoa", "palm oil", "rubber"],
+                    "latest_prices": {
+                        "cocoa": 2850,
+                        "palm_oil": 950,
+                        "rubber": 1650
+                    }
+                },
+                "GSE": {
+                    "location": "Ghana",
+                    "commodities": ["gold", "cocoa", "timber"],
+                    "latest_prices": {
+                        "gold": 62000,
+                        "cocoa": 2950,
+                        "timber": 450
+                    }
+                },
+                "NSE": {
+                    "location": "Kenya",
+                    "commodities": ["coffee", "tea", "flowers"],
+                    "latest_prices": {
+                        "coffee": 5200,
+                        "tea": 3200,
+                        "flowers": 1200
+                    }
+                }
+            },
+            "timestamp": time.time()
+        }
+        
+        self._cache_data(cache_key, data)
+        return data
+    
+    def get_social_sentiment(self, keywords: list) -> Dict[str, Any]:
+        """Analyze social media sentiment for products"""
+        cache_key = f"social_sentiment_{'_'.join(keywords)}"
+        if self._is_cache_valid(cache_key):
+            return self.cache[cache_key]
+        
+        # Sample sentiment data
+        data = {
+            "keywords": keywords,
+            "sentiment_scores": {
+                "positive": 0.65,
+                "neutral": 0.25,
+                "negative": 0.10
+            },
+            "trending_topics": [
+                f"{keywords[0]} quality improvements",
+                f"{keywords[1]} market demand",
+                "sustainable farming practices"
+            ],
+            "timestamp": time.time()
+        }
+        
+        self._cache_data(cache_key, data)
+        return data
+    
 if __name__ == "__main__":
     collector = DataCollector()
     print("Census Data:", collector.get_census_data())
