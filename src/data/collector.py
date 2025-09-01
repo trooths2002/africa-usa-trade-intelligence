@@ -7,6 +7,11 @@ from typing import Dict, Any, Optional
 import time
 from datetime import datetime
 import json
+import sys
+import os
+
+# Add the src directory to the path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 class DataCollector:
     def __init__(self):
@@ -99,21 +104,6 @@ class DataCollector:
         self._cache_data(cache_key, data)
         return data
     
-    def _is_cache_valid(self, key: str, expiry_minutes: int = 30) -> bool:
-        """Check if cached data is still valid"""
-        if key not in self.cache:
-            return False
-        
-        if key not in self.cache_expiry:
-            return False
-        
-        return (time.time() - self.cache_expiry[key]) < (expiry_minutes * 60)
-    
-    def _cache_data(self, key: str, data: Any) -> None:
-        """Cache data with timestamp"""
-        self.cache[key] = data
-        self.cache_expiry[key] = time.time()
-    
     def get_african_exchange_data(self) -> Dict[str, Any]:
         """Get data from African commodity exchanges"""
         cache_key = "african_exchanges"
@@ -182,7 +172,17 @@ class DataCollector:
         self._cache_data(cache_key, data)
         return data
     
-if __name__ == "__main__":
-    collector = DataCollector()
-    print("Census Data:", collector.get_census_data())
-    print("Exchange Rates:", collector.get_exchange_rates())
+    def _is_cache_valid(self, key: str, expiry_minutes: int = 30) -> bool:
+        """Check if cached data is still valid"""
+        if key not in self.cache:
+            return False
+        
+        if key not in self.cache_expiry:
+            return False
+        
+        return (time.time() - self.cache_expiry[key]) < (expiry_minutes * 60)
+    
+    def _cache_data(self, key: str, data: Any) -> None:
+        """Cache data with timestamp"""
+        self.cache[key] = data
+        self.cache_expiry[key] = time.time()

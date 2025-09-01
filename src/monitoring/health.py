@@ -4,6 +4,11 @@ Health monitoring for the Africa-USA Trade Intelligence Platform
 import requests
 from typing import Dict, Any
 import time
+import sys
+import os
+
+# Add the src directory to the path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 class HealthMonitor:
     def __init__(self, api_base_url: str = "http://localhost:8000"):

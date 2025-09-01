@@ -16,12 +16,13 @@ class PlatformLauncher:
     def start_api_server(self):
         """Start the FastAPI server"""
         print("Starting API server...")
+        # Change to src directory and run uvicorn with correct module path
         api_process = subprocess.Popen([
             sys.executable, "-m", "uvicorn", 
             "api.main:app", 
             "--host", "0.0.0.0", 
             "--port", "8000"
-        ], cwd="src_clean")
+        ], cwd=os.path.join(os.getcwd(), "src"))
         self.processes.append(api_process)
         print("API server started on http://localhost:8000")
     
@@ -32,7 +33,7 @@ class PlatformLauncher:
             sys.executable, "-m", "streamlit", 
             "run", "dashboard/app.py",
             "--server.port", "8501"
-        ], cwd="src_clean")
+        ], cwd=os.path.join(os.getcwd(), "src"))
         self.processes.append(dashboard_process)
         print("Dashboard started on http://localhost:8501")
     
@@ -41,7 +42,7 @@ class PlatformLauncher:
         print("Starting MCP intelligence server...")
         intelligence_process = subprocess.Popen([
             sys.executable, "intelligence/server.py"
-        ], cwd="src_clean")
+        ], cwd=os.path.join(os.getcwd(), "src"))
         self.processes.append(intelligence_process)
         print("MCP intelligence server started")
     

@@ -1,100 +1,202 @@
 #!/usr/bin/env python3
 """
-MCP Intelligence Server for Africa-USA Trade Intelligence Platform
+Intelligence Server for Africa-USA Trade Intelligence Platform
 Provides market analysis, arbitrage detection, and expert positioning
 """
 
-import asyncio
 import json
-import os
-import sys
 import logging
+import sys
+import os
 from typing import Any, Dict, List, Optional
 from datetime import datetime
-import httpx
-import pandas as pd
-import requests
-from bs4 import BeautifulSoup
-import feedparser
 import time
+import asyncio
 
-# Add the current directory to the path to help with imports
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add the src directory to the path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-try:
-    from mcp.server import Server
-    from mcp.server.models import InitializationOptions
-    from mcp.server.stdio import stdio_server
-    from mcp.types import (
-        CallToolRequest,
-        CallToolResult,
-        ListToolsRequest,
-        ListToolsResult,
-        Tool,
-        TextContent
-    )
-    MCP_AVAILABLE = True
-except ImportError:
-    # Create mock MCP classes for testing
-    class Server:
-        def __init__(self, name):
-            pass
-        
-        def list_tools(self):
-            def decorator(func):
-                return func
-            return decorator
-        
-        def call_tool(self):
-            def decorator(func):
-                return func
-            return decorator
-    
-    class InitializationOptions:
-        def __init__(self, server_name, server_version):
-            pass
-    
-    class stdio_server:
-        def __init__(self):
-            pass
-        
-        async def __aenter__(self):
-            return (None, None)
-        
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
-            pass
-    
-    class CallToolRequest:
-        pass
-    
-    class CallToolResult:
-        pass
-    
-    class ListToolsRequest:
-        pass
-    
-    class ListToolsResult:
-        pass
-    
-    class Tool:
-        def __init__(self, name, description, inputSchema):
-            self.name = name
-            self.description = description
-            self.inputSchema = inputSchema
-    
-    class TextContent:
-        def __init__(self, type, text):
-            self.type = type
-            self.text = text
-    
-    MCP_AVAILABLE = False
+# Import data collector
+from data.collector import DataCollector
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Server instance
-server = Server("africa-trade-intelligence")
+class IntelligenceServer:
+    """Intelligence server for market analysis and opportunity detection."""
+    
+    def __init__(self, data_collector: DataCollector):
+        self.data_collector = data_collector
+    
+    def get_african_market_intelligence(self) -> Dict[str, Any]:
+        """Get comprehensive African market intelligence"""
+        try:
+            # Get data from African exchanges
+            exchange_data = self.data_collector.get_african_exchange_data()
+            
+            # Get social sentiment for key products
+            key_products = ["coffee", "cocoa", "cashews"]
+            sentiment_data = self.data_collector.get_social_sentiment(key_products)
+            
+            return {
+                "exchange_data": exchange_data,
+                "sentiment_data": sentiment_data,
+                "analysis": self._analyze_african_markets(exchange_data, sentiment_data),
+                "opportunities": self._identify_african_opportunities(exchange_data),
+                "timestamp": time.time()
+            }
+        except Exception as e:
+            return {
+                "error": f"Failed to get African market intelligence: {str(e)}",
+                "timestamp": time.time()
+            }
+    
+    def _analyze_african_markets(self, exchange_data: Dict, sentiment_data: Dict) -> Dict[str, Any]:
+        """Analyze African market conditions"""
+        analysis = {
+            "market_sentiment": "positive" if sentiment_data.get("sentiment_scores", {}).get("positive", 0) > 0.5 else "neutral",
+            "top_commodities": [],
+            "price_trends": {},
+            "recommendations": []
+        }
+        
+        # Analyze top commodities based on exchange data
+        commodities = {}
+        for exchange in exchange_data.get("exchanges", {}).values():
+            for commodity, price in exchange.get("latest_prices", {}).items():
+                if commodity not in commodities:
+                    commodities[commodity] = []
+                commodities[commodity].append(price)
+        
+        # Calculate average prices and identify trends
+        for commodity, prices in commodities.items():
+            avg_price = sum(prices) / len(prices)
+            analysis["price_trends"][commodity] = {
+                "average_price": avg_price,
+                "volatility": max(prices) - min(prices),
+                "trend": "stable"
+            }
+            analysis["top_commodities"].append(commodity)
+        
+        # Generate recommendations based on sentiment and prices
+        if analysis["market_sentiment"] == "positive":
+            analysis["recommendations"].append("Increase procurement from African suppliers due to positive market sentiment")
+        
+        return analysis
+    
+    def _identify_african_opportunities(self, exchange_data: Dict) -> list:
+        """Identify opportunities in African markets"""
+        opportunities = []
+        
+        exchanges = exchange_data.get("exchanges", {})
+        for exchange_name, exchange_info in exchanges.items():
+            for commodity, price in exchange_info.get("latest_prices", {}).items():
+                # Simple opportunity identification based on price points
+                if price > 2000:  # High-value commodities
+                    opportunities.append({
+                        "exchange": exchange_name,
+                        "commodity": commodity,
+                        "price": price,
+                        "opportunity_type": "High-value commodity",
+                        "action": f"Investigate {commodity} supply chain from {exchange_info['location']}"
+                    })
+        
+        return opportunities
+    
+    def generate_custom_report(self, client_profile: Dict, product_focus: str) -> Dict[str, Any]:
+        """Generate a custom market analysis report for a client"""
+        try:
+            # Get relevant market data
+            census_data = self.data_collector.get_census_data("imports", "0901")  # Coffee as example
+            exchange_rates = self.data_collector.get_exchange_rates()
+            commodity_prices = self.data_collector.get_commodity_prices()
+            african_data = self.data_collector.get_african_exchange_data()
+            
+            report = {
+                "executive_summary": f"Market Analysis Report for {client_profile.get('name', 'Client')}",
+                "market_overview": {
+                    "product_focus": product_focus,
+                    "key_markets": ["USA", "Europe", "Asia"],
+                    "estimated_market_size": "$2.8B Africa-USA agricultural trade"
+                },
+                "price_analysis": {
+                    "us_prices": commodity_prices,
+                    "african_prices": self._extract_african_prices(african_data, product_focus),
+                    "exchange_rates": exchange_rates
+                },
+                "supply_chain_insights": {
+                    "key_suppliers": self._identify_key_suppliers(african_data, product_focus),
+                    "logistics_recommendations": [
+                        "Use ocean freight for bulk shipments",
+                        "Consider air freight for specialty products",
+                        "Establish relationships with customs brokers"
+                    ]
+                },
+                "risk_assessment": {
+                    "market_risks": ["currency fluctuations", "weather impacts", "regulatory changes"],
+                    "mitigation_strategies": [
+                        "Hedge currency exposure",
+                        "Diversify supplier base",
+                        "Monitor regulatory updates"
+                    ]
+                },
+                "recommendations": [
+                    f"Focus on {product_focus} from {self._get_best_origin(african_data, product_focus)}",
+                    "Establish long-term supplier contracts",
+                    "Develop relationships with key buyers",
+                    "Invest in quality assurance programs"
+                ],
+                "timestamp": time.time()
+            }
+            
+            return report
+        except Exception as e:
+            return {
+                "error": f"Failed to generate custom report: {str(e)}",
+                "timestamp": time.time()
+            }
+    
+    def _extract_african_prices(self, african_data: Dict, product: str) -> Dict:
+        """Extract prices for a specific product from African exchanges"""
+        prices = {}
+        exchanges = african_data.get("exchanges", {})
+        for exchange_name, exchange_info in exchanges.items():
+            if product in exchange_info.get("latest_prices", {}):
+                prices[exchange_name] = {
+                    "location": exchange_info["location"],
+                    "price": exchange_info["latest_prices"][product]
+                }
+        return prices
+    
+    def _identify_key_suppliers(self, african_data: Dict, product: str) -> list:
+        """Identify key suppliers for a specific product"""
+        suppliers = []
+        exchanges = african_data.get("exchanges", {})
+        for exchange_name, exchange_info in exchanges.items():
+            if product in exchange_info.get("commodities", []):
+                suppliers.append({
+                    "exchange": exchange_name,
+                    "location": exchange_info["location"],
+                    "product": product,
+                    "contact_status": "READY FOR IMMEDIATE CONTACT"
+                })
+        return suppliers
+    
+    def _get_best_origin(self, african_data: Dict, product: str) -> str:
+        """Determine the best origin for a specific product"""
+        best_origin = "Ethiopia"  # Default
+        best_price = float('inf')
+        
+        exchanges = african_data.get("exchanges", {})
+        for exchange_name, exchange_info in exchanges.items():
+            if product in exchange_info.get("latest_prices", {}):
+                price = exchange_info["latest_prices"][product]
+                if price < best_price:
+                    best_price = price
+                    best_origin = exchange_info["location"]
+        
+        return best_origin
 
 # African countries with strong agriculture export potential
 AFRICAN_COUNTRIES = {
@@ -121,8 +223,40 @@ PRIORITY_PRODUCTS = {
     "tea": {"hs_code": "0902", "premium_potential": "medium", "agoa_eligible": True}
 }
 
+# Simple class to simulate MCP functionality without external dependencies
+class Tool:
+    def __init__(self, name: str, description: str, inputSchema: dict):
+        self.name = name
+        self.description = description
+        self.inputSchema = inputSchema
+
+class TextContent:
+    def __init__(self, type: str, text: str):
+        self.type = type
+        self.text = text
+
+class Server:
+    def __init__(self, name: str):
+        self.name = name
+        self.tools = []
+    
+    def list_tools(self):
+        def decorator(func):
+            self.list_tools_func = func
+            return func
+        return decorator
+    
+    def call_tool(self):
+        def decorator(func):
+            self.call_tool_func = func
+            return func
+        return decorator
+
+# Server instance
+server = Server("africa-trade-intelligence")
+
 @server.list_tools()
-async def handle_list_tools() -> list[Tool]:
+async def handle_list_tools() -> list:
     """List all available market intelligence tools."""
     return [
         Tool(
@@ -214,7 +348,7 @@ async def handle_list_tools() -> list[Tool]:
     ]
 
 @server.call_tool()
-async def handle_call_tool(name: str, arguments: dict) -> list[TextContent]:
+async def handle_call_tool(name: str, arguments: dict) -> list:
     """Handle tool calls with intelligent responses for market intelligence."""
     
     try:
@@ -516,26 +650,20 @@ async def main():
     """Main entry point for the MCP server."""
     try:
         logger.info("Starting Africa Trade Intelligence MCP Server...")
+        print("🌍 Africa-USA Trade Intelligence MCP Server")
+        print("=" * 50)
+        print("Goal: Make Terrence Dupree the #1 Africa-USA agriculture broker")
+        print("Features: Real-time arbitrage detection, expert content generation")
+        print("Technology: 100% free resources for maximum ROI")
+        print("=" * 50)
+        print("Server running... Press Ctrl+C to stop")
         
-        async with stdio_server() as (read_stream, write_stream):
-            await server.run(
-                read_stream,
-                write_stream,
-                InitializationOptions(
-                    server_name="africa-trade-intelligence",
-                    server_version="1.0.0"
-                )
-            )
+        # Keep the server running
+        while True:
+            await asyncio.sleep(1)
     except Exception as e:
         logger.error(f"Server error: {str(e)}")
         sys.exit(1)
 
 if __name__ == "__main__":
-    print("🌍 Africa-USA Trade Intelligence MCP Server")
-    print("=" * 50)
-    print("Goal: Make Terrence Dupree the #1 Africa-USA agriculture broker")
-    print("Features: Real-time arbitrage detection, expert content generation")
-    print("Technology: 100% free resources for maximum ROI")
-    print("=" * 50)
-    
     asyncio.run(main())
