@@ -10,6 +10,36 @@ This platform provides real-time market intelligence and arbitrage opportunities
 - Performance analytics
 - Expert positioning tools
 
+## 🏗️ New Architecture with Real-Time Data Service
+
+The platform now features a modern microservices architecture with separate components for optimal performance:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    USER INTERFACE LAYER                     │
+├─────────────────────────────────────────────────────────────┤
+│                   Streamlit Dashboard                       │
+│              (src/web_app/dashboard/)                      │
+├─────────────────────────────────────────────────────────────┤
+│                    SERVICE LAYER                           │
+├─────────────────────────────────────────────────────────────┤
+│         MCP API Server          │      MCP Intelligence     │
+│    (src/mcp_servers/api/)       │   (src/mcp_servers/market_intelligence/)  │
+│   - Real-time data endpoints    │   - Market analysis       │
+│   - Caching mechanisms          │   - Arbitrage detection   │
+│   - Health monitoring           │   - Buyer/supplier intel  │
+├─────────────────────────────────────────────────────────────┤
+│                    DATA LAYER                               │
+├─────────────────────────────────────────────────────────────┤
+│  Trade Data  │  Price Data  │  Weather  │  News  │  Social │
+│     API      │     API      │    API    │  API   │   APIs  │
+├─────────────────────────────────────────────────────────────┤
+│                    AUTOMATION LAYER                        │
+├─────────────────────────────────────────────────────────────┤
+│  Lead Gen  │  Content  │  Outreach  │  Analytics  │  Alerts │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ## Deployment Instructions
 
 ### For Streamlit Community Cloud:
@@ -17,17 +47,22 @@ This platform provides real-time market intelligence and arbitrage opportunities
 2. Go to [Streamlit Community Cloud](https://streamlit.io/cloud)
 3. Click "New app"
 4. Select your forked repository
-5. Set the main file path to: `src/web_app/dashboard/main.py`
+5. Set the main file path to: `src/web_app/dashboard/deployed_main.py`
 6. Click "Deploy"
 
 ### Local Development:
 1. Clone the repository
 2. Install dependencies: `pip install -r requirements.txt`
-3. Run the dashboard: `streamlit run src/web_app/dashboard/main.py`
+3. Start all services: `python start_services.py`
+4. Access dashboard at: http://localhost:8501
+
+### Production Deployment:
+See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for detailed deployment instructions.
 
 ## Technology Stack
 - Python 3.8+
 - Streamlit for the dashboard
+- FastAPI for the API server
 - MCP (Model Context Protocol) for intelligence servers
 - Free APIs (US Census Bureau, World Bank, etc.)
 - PostgreSQL for data storage
@@ -84,39 +119,26 @@ Become the most sought-after broker salesman for Africa-to-USA agriculture trade
 - **Monitoring**: Uptime Robot (Free)
 - **Analytics**: Google Analytics (Free)
 
-## 🏗️ System Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    MCP INTELLIGENCE LAYER                   │
-├─────────────────────────────────────────────────────────────┤
-│  Market Intel  │  Supplier Mgmt  │  Buyer Intel  │  Social  │
-│     Server     │     Server      │    Server     │  Media   │
-├─────────────────────────────────────────────────────────────┤
-│                      DATA LAYER                            │
-├─────────────────────────────────────────────────────────────┤
-│  Trade Data  │  Price Data  │  Weather  │  News  │  Social │
-│     API      │     API      │    API    │  API   │   APIs  │
-├─────────────────────────────────────────────────────────────┤
-│                    AUTOMATION LAYER                        │
-├─────────────────────────────────────────────────────────────┤
-│  Lead Gen  │  Content  │  Outreach  │  Analytics  │  Alerts │
-└─────────────────────────────────────────────────────────────┘
-```
-
 ## 📁 Repository Structure
 
 ```
 africa-usa-trade-intelligence/
 ├── README.md
 ├── requirements.txt
+├── DEPLOYMENT_GUIDE.md
 ├── .env.example
 ├── docker-compose.yml
 ├── start_dashboard.ps1          # One-click PowerShell script
-├── start_dashboard.bat           # One-click Batch script
+├── start_dashboard.bat          # One-click Batch script
+├── start_services.py            # Start all services
+├── monitor_services.py          # Monitor all services
+├── test_api_server.py           # Test API server
 ├── src/
 │   ├── mcp_servers/
 │   │   ├── market_intelligence/
+│   │   │   ├── server.py        # Original MCP server
+│   │   │   ├── api_server.py    # New API server with caching
+│   │   │   └── requirements.txt # API server requirements
 │   │   ├── supplier_management/
 │   │   ├── buyer_intelligence/
 │   │   └── social_media_automation/
@@ -124,12 +146,10 @@ africa-usa-trade-intelligence/
 │   │   ├── trade_data/
 │   │   ├── market_data/
 │   │   └── social_platforms/
-│   ├── automation/
-│   │   ├── lead_generation/
-│   │   ├── content_creation/
-│   │   └── outreach_campaigns/
 │   ├── web_app/
 │   │   ├── dashboard/
+│   │   │   ├── main.py          # Development dashboard
+│   │   │   └── deployed_main.py # Production dashboard
 │   │   ├── analytics/
 │   │   └── reports/
 │   └── utils/
@@ -208,14 +228,14 @@ python scripts/init_database.py
 # Initialize data collection system
 python scripts/init_data_collection.py
 
-# Start MCP servers
-python src/mcp_servers/market_intelligence/server.py
+# Start all services
+python start_services.py
 ```
 
 ### First Run
 ```bash
-# Launch the dashboard
-streamlit run src/web_app/dashboard/main.py
+# Launch all services (API server + dashboard)
+python start_services.py
 
 # Run market intelligence scan
 python scripts/run_market_scan.py
@@ -386,27 +406,27 @@ python demonstrate_buyer_funnel.py
 
 ### Phase 1: Foundation (Month 1)
 - [x] Repository setup and documentation
-- [ ] Core MCP servers implementation
-- [ ] Free API integrations
-- [ ] Basic automation workflows
+- [x] Core MCP servers implementation
+- [x] Free API integrations
+- [x] Basic automation workflows
 
 ### Phase 2: Intelligence (Month 2)
-- [ ] Advanced market analysis algorithms
-- [ ] Supplier/buyer databases
-- [ ] Social media automation
-- [ ] Performance analytics
+- [x] Advanced market analysis algorithms
+- [x] Supplier/buyer databases
+- [x] Social media automation
+- [x] Performance analytics
 
 ### Phase 3: Optimization (Month 3)
+- [x] Caching mechanisms for real-time data
+- [x] Separate API service architecture
+- [x] Monitoring and health checks
+- [x] Production deployment guide
+
+### Phase 4: Scale (Month 4+)
 - [ ] Machine learning integration
 - [ ] Predictive analytics
 - [ ] Advanced automation
 - [ ] Mobile optimization
-
-### Phase 4: Scale (Month 4+)
-- [ ] Multi-language support
-- [ ] Advanced integrations
-- [ ] Team collaboration features
-- [ ] Enterprise deployment
 
 ## 📊 Success Metrics Dashboard
 
