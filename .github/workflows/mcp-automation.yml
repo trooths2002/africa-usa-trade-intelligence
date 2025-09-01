@@ -1,0 +1,100 @@
+name: MCP Automation with SMTP Email
+
+on:
+  schedule:
+    # Run every hour at the top of the hour
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    inputs:
+      force_email:
+        description: 'Force send email notification'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  mcp-automation:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run Quick Scan Script
+      run: |
+        echo "Starting MCP Quick Scan..."
+        python scripts/automated_data_tracker.py
+        echo "Quick scan completed successfully"
+
+    - name: Generate Data Summary
+      run: |
+        echo "Generating trade intelligence summary..."
+        python scripts/automation/send_email_summary.py
+        echo "Summary generation completed"
+
+    - name: Create Artifacts Directory
+      run: |
+        mkdir -p artifacts
+        cp -r data/census_data artifacts/ 2>/dev/null || echo "No census data to copy"
+        cp email_summary.json artifacts/ 2>/dev/null || echo "No email summary to copy"
+        echo "Artifacts prepared for upload"
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: mcp-automation-results-${{ github.run_number }}
+        path: |
+          artifacts/
+          email_summary.json
+        retention-days: 30
+
+    - name: Prepare Email Content
+      id: email_content
+      run: |
+        if [ -f email_summary.json ]; then
+          SUBJECT=$(python -c "import json; data=json.load(open('email_summary.json')); print(data['subject'])")
+          BODY=$(python -c "import json; data=json.load(open('email_summary.json')); print(data['body'])")
+          echo "SUBJECT=$SUBJECT" >> $GITHUB_OUTPUT
+          echo "BODY<<EOF" >> $GITHUB_OUTPUT
+          echo "$BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "✅ Email content prepared"
+        else
+          echo "SUBJECT=MCP Automation - No Summary Generated" >> $GITHUB_OUTPUT
+          echo "BODY=The automated summary could not be generated. Please check the workflow logs." >> $GITHUB_OUTPUT
+          echo "⚠️ Using fallback email content"
+        fi
+
+    - name: Send Email Summary via SMTP
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: ${{ secrets.SMTP_HOST }}
+        server_port: ${{ secrets.SMTP_PORT }}
+        username: ${{ secrets.SMTP_USERNAME }}
+        password: ${{ secrets.SMTP_PASSWORD }}
+        subject: ${{ steps.email_content.outputs.SUBJECT }}
+        to: ${{ secrets.NOTIFY_EMAIL_TO }}
+        from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+        body: ${{ steps.email_content.outputs.BODY }}
+        content_type: text/plain
+        priority: normal
+
+    - name: Log Automation Results
+      run: |
+        echo "=== MCP Automation Workflow Completed ==="
+        echo "Timestamp: $(date -u)"
+        echo "Run ID: ${{ github.run_id }}"
+        echo "Run Number: ${{ github.run_number }}"
+        echo "Artifacts uploaded: mcp-automation-results-${{ github.run_number }}"
+        echo "Email notification sent to: ${{ secrets.NOTIFY_EMAIL_TO }}"
+        echo "Next run scheduled in 1 hour"
