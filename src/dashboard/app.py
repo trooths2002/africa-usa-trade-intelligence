@@ -11,6 +11,7 @@ import plotly.express as px
 import time
 import os
 from dotenv import load_dotenv
+import json
 
 # Load environment variables
 load_dotenv()
@@ -30,6 +31,7 @@ st.markdown("""
         padding: 1rem;
         border-radius: 10px;
         margin-bottom: 2rem;
+        color: white;
     }
     .metric-card {
         background: white;
@@ -37,6 +39,7 @@ st.markdown("""
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         border-left: 4px solid #2a5298;
+        height: 100%;
     }
     .opportunity-card {
         background: #f8f9fa;
@@ -45,11 +48,56 @@ st.markdown("""
         border-left: 4px solid #28a745;
         margin: 0.5rem 0;
     }
+    .error-card {
+        background: #f8d7da;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #dc3545;
+        margin: 0.5rem 0;
+        color: #721c24;
+    }
+    .success-card {
+        background: #d4edda;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #28a745;
+        margin: 0.5rem 0;
+        color: #155724;
+    }
+    .warning-card {
+        background: #fff3cd;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #ffc107;
+        margin: 0.5rem 0;
+        color: #856404;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # API Configuration - Use environment variable or default to Render deployment
 API_BASE_URL = os.getenv("STREAMLIT_API_URL", "https://africa-usa-trade-intelligence.onrender.com")
+
+# Utility functions
+def test_api_connection():
+    """Test if the API is reachable"""
+    try:
+        response = requests.get(f"{API_BASE_URL}/health", timeout=10)
+        return response.status_code == 200, response.json() if response.status_code == 200 else None
+    except Exception as e:
+        return False, str(e)
+
+def fetch_data(endpoint, params=None):
+    """Fetch data from API with error handling"""
+    try:
+        url = f"{API_BASE_URL}/{endpoint}"
+        response = requests.get(url, params=params, timeout=30)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return {"error": f"API returned status code {response.status_code}"}
+    except Exception as e:
+        return {"error": f"Connection error: {str(e)}"}
 
 # Main Header
 st.markdown("""
@@ -60,104 +108,117 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # API Status
-with st.expander("📡 API Service Status", expanded=False):
-    try:
-        response = requests.get(f"{API_BASE_URL}/health", timeout=5)
-        if response.status_code == 200:
-            status_data = response.json()
-            st.success(f"✅ API Service Online - Status: {status_data['status']}")
-            st.info(f"API Endpoint: {API_BASE_URL}")
-        else:
-            st.error("❌ API Service Unreachable")
-            st.info(f"Attempting to connect to: {API_BASE_URL}")
-    except Exception as e:
-        st.error(f"❌ API Service Unreachable: {str(e)}")
+with st.expander("📡 API Service Status", expanded=True):
+    is_connected, status_data = test_api_connection()
+    if is_connected:
+        st.success(f"✅ API Service Online - Status: {status_data['status'] if status_data else 'Unknown'}")
+        st.info(f"API Endpoint: {API_BASE_URL}")
+    else:
+        st.error("❌ API Service Unreachable")
         st.info(f"Attempting to connect to: {API_BASE_URL}")
+        if status_data:
+            st.error(f"Error details: {status_data}")
 
 # Custom Report Generator
 st.markdown("## 📊 Custom Market Intelligence Report")
 with st.form("custom_report_form"):
-    client_name = st.text_input("Client Name", "Global Foods Inc.")
-    product_focus = st.selectbox("Product Focus", ["coffee", "cocoa", "cashews", "palm oil", "rubber"])
+    col1, col2 = st.columns(2)
+    with col1:
+        client_name = st.text_input("Client Name", "Global Foods Inc.")
+    with col2:
+        product_focus = st.selectbox("Product Focus", ["coffee", "cocoa", "cashews", "palm oil", "rubber", "shea butter", "vanilla"])
+    
     submit_button = st.form_submit_button("Generate Report")
     
     if submit_button:
         with st.spinner("Generating custom report..."):
-            try:
-                response = requests.get(
-                    f"{API_BASE_URL}/custom-report",
-                    params={"client_name": client_name, "product_focus": product_focus},
-                    timeout=30
-                )
-                if response.status_code == 200:
-                    report_data = response.json()
-                    if "error" not in report_data:
-                        st.success("Report generated successfully!")
-                        
-                        # Display report sections
-                        st.markdown("### Executive Summary")
-                        st.write(report_data.get("executive_summary", ""))
-                        
-                        st.markdown("### Market Overview")
-                        overview = report_data.get("market_overview", {})
-                        st.write(f"**Product Focus**: {overview.get('product_focus', '')}")
-                        st.write(f"**Key Markets**: {', '.join(overview.get('key_markets', []))}")
-                        st.write(f"**Estimated Market Size**: {overview.get('estimated_market_size', '')}")
-                        
-                        st.markdown("### Price Analysis")
-                        price_analysis = report_data.get("price_analysis", {})
-                        st.write("**US Prices**:", price_analysis.get("us_prices", {}))
-                        st.write("**African Prices**:", price_analysis.get("african_prices", {}))
-                        
-                        st.markdown("### Recommendations")
-                        for rec in report_data.get("recommendations", []):
-                            st.markdown(f"- {rec}")
+            report_data = fetch_data("custom-report", {"client_name": client_name, "product_focus": product_focus})
+            if "error" not in report_data:
+                st.success("Report generated successfully!")
+                
+                # Display report sections
+                st.markdown("### Executive Summary")
+                st.write(report_data.get("executive_summary", "No summary available"))
+                
+                st.markdown("### Market Overview")
+                overview = report_data.get("market_overview", {})
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Product Focus", overview.get('product_focus', 'N/A'))
+                with col2:
+                    st.metric("Key Markets", len(overview.get('key_markets', [])))
+                with col3:
+                    st.metric("Market Size", overview.get('estimated_market_size', 'N/A'))
+                
+                st.markdown("### Price Analysis")
+                price_analysis = report_data.get("price_analysis", {})
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown("**US Prices**:")
+                    us_prices = price_analysis.get("us_prices", {})
+                    if us_prices:
+                        for key, value in us_prices.items():
+                            st.write(f"- {key}: {value}")
                     else:
-                        st.error(f"Error generating report: {report_data['error']}")
+                        st.write("No US price data available")
+                with col2:
+                    st.markdown("**African Prices**:")
+                    african_prices = price_analysis.get("african_prices", {})
+                    if african_prices:
+                        for key, value in african_prices.items():
+                            st.write(f"- {key}: {value}")
+                    else:
+                        st.write("No African price data available")
+                
+                st.markdown("### Recommendations")
+                recommendations = report_data.get("recommendations", [])
+                if recommendations:
+                    for i, rec in enumerate(recommendations, 1):
+                        st.markdown(f"{i}. {rec}")
                 else:
-                    st.error(f"API request failed with status {response.status_code}")
-            except Exception as e:
-                st.error(f"Error generating report: {str(e)}")
+                    st.write("No recommendations available")
+            else:
+                st.error(f"Error generating report: {report_data['error']}")
 
 # African Market Intelligence
 st.markdown("## 🌍 African Market Intelligence")
-try:
-    response = requests.get(f"{API_BASE_URL}/african-markets", timeout=10)
-    if response.status_code == 200:
-        african_data = response.json()
-        if "error" not in african_data:
-            # Display market sentiment
-            sentiment = african_data.get("analysis", {}).get("market_sentiment", "neutral")
-            st.metric("Market Sentiment", sentiment.title())
-            
-            # Display top commodities
-            st.markdown("### Top Commodities")
-            commodities = african_data.get("analysis", {}).get("top_commodities", [])
-            cols = st.columns(len(commodities))
-            for i, commodity in enumerate(commodities):
-                with cols[i]:
-                    st.metric(commodity.title(), "Active Market")
-            
-            # Display opportunities
-            st.markdown("### Market Opportunities")
-            opportunities = african_data.get("opportunities", [])
-            for opp in opportunities:
-                st.markdown(f"""
-                <div class="opportunity-card">
-                    <h4>{opp['opportunity_type']}</h4>
-                    <p><strong>Exchange:</strong> {opp['exchange']}</p>
-                    <p><strong>Commodity:</strong> {opp['commodity']}</p>
-                    <p><strong>Action:</strong> {opp['action']}</p>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.warning(f"Unable to fetch African market data: {african_data['error']}")
+african_data = fetch_data("african-markets")
+if "error" not in african_data:
+    # Display market sentiment
+    sentiment = african_data.get("analysis", {}).get("market_sentiment", "neutral")
+    sentiment_color = {"positive": "🟢", "negative": "🔴", "neutral": "🟡"}.get(sentiment.lower(), "🟡")
+    st.metric("Market Sentiment", f"{sentiment_color} {sentiment.title()}")
+    
+    # Display top commodities
+    st.markdown("### Top Commodities")
+    commodities = african_data.get("analysis", {}).get("top_commodities", [])
+    if commodities:
+        cols = st.columns(min(len(commodities), 5))
+        for i, commodity in enumerate(commodities[:5]):
+            with cols[i]:
+                st.metric(commodity.title(), "Active Market")
     else:
-        st.error(f"API request failed with status {response.status_code}")
-except Exception as e:
-    st.error(f"Error connecting to API service: {str(e)}")
+        st.info("No commodity data available")
+    
+    # Display opportunities
+    st.markdown("### Market Opportunities")
+    opportunities = african_data.get("opportunities", [])
+    if opportunities:
+        for opp in opportunities:
+            st.markdown(f"""
+            <div class="opportunity-card">
+                <h4>{opp.get('opportunity_type', 'Opportunity')}</h4>
+                <p><strong>Exchange:</strong> {opp.get('exchange', 'N/A')}</p>
+                <p><strong>Commodity:</strong> {opp.get('commodity', 'N/A')}</p>
+                <p><strong>Action:</strong> {opp.get('action', 'N/A')}</p>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.info("No market opportunities available")
+else:
+    st.error(f"Unable to fetch African market data: {african_data['error']}")
 
-# Existing dashboard content
+# High-Value Arbitrage Opportunities
 st.markdown("## 🎯 High-Value Arbitrage Opportunities")
 
 # Simulated data for when API is not available
@@ -206,3 +267,34 @@ def get_simulated_arbitrage_opportunities():
                 "net_margin_estimate": "33%",
                 "monthly_volume_potential": "50,000 kg",
                 "revenue_potential": "445,000 USD/month",
+                "commission_potential": "22,250 USD/month",
+                "agoa_eligible": True,
+                "certification_premiums": ["Rainforest Alliance: +20%", "UTZ: +15%"],
+                "risk_level": "Low",
+                "action_required": "Contact Nairobi Coffee Exchange",
+                "buyer_targets": ["Premium coffee retailers", "Starbucks", "Peet's Coffee"]
+            }
+        ]
+    }
+
+# Display opportunities
+opportunities = get_simulated_arbitrage_opportunities()["high_priority_opportunities"]
+cols = st.columns(min(len(opportunities), 3))
+for i, opp in enumerate(opportunities):
+    with cols[i % 3]:
+        st.markdown(f"""
+        <div class="opportunity-card">
+            <h4>{opp['product']}</h4>
+            <p><strong>Supplier Country:</strong> {opp['supplier_country']}</p>
+            <p><strong>FOB Price:</strong> {opp['fob_price']}</p>
+            <p><strong>US Market Price:</strong> {opp['us_market_price']}</p>
+            <p><strong>Gross Margin:</strong> {opp['gross_margin']}</p>
+            <p><strong>Commission Potential:</strong> {opp['commission_potential']}</p>
+            <p><strong>Risk Level:</strong> {opp['risk_level']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+# Footer
+st.markdown("---")
+st.markdown("### 🚀 Free World Trade Inc. - Terrence Dupree")
+st.markdown("World's #1 Africa-USA Agriculture Broker - Driving Global Trade Excellence")

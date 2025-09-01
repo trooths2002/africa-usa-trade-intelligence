@@ -1,0 +1,40 @@
+name: Monitoring Agent
+
+on:
+  schedule:
+    # Run every hour
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  monitor-system:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run monitoring check
+        run: |
+          python src/monitoring/agent.py
+        env:
+          STREAMLIT_API_URL: ${{ secrets.STREAMLIT_API_URL }}
+          MONITORING_INTERVAL: "3600"  # 1 hour
+          ALERT_THRESHOLD: "2"
+          EMAIL_RECIPIENT: "temangroup1930@gmail.com"
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_HOST: "smtp.gmail.com"
+          EMAIL_PORT: "587"
+
+      - name: Report status
+        run: |
+          echo "Monitoring check completed"

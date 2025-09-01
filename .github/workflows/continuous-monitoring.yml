@@ -1,0 +1,64 @@
+name: Continuous Monitoring for 7 Days
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration_days:
+        description: 'Monitoring duration in days (default: 7)'
+        required: false
+        default: '7'
+
+jobs:
+  setup-monitoring:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create monitoring schedule
+        run: |
+          echo "Setting up continuous monitoring for ${{ github.event.inputs.duration_days || '7' }} days"
+          echo "START_TIME=$(date -u +%s)" >> $GITHUB_ENV
+          echo "DURATION_SECONDS=$(((${{ github.event.inputs.duration_days || '7' }} * 24 * 60 * 60)))" >> $GITHUB_ENV
+
+  monitor-hourly:
+    needs: setup-monitoring
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        hour: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check monitoring duration
+        run: |
+          CURRENT_TIME=$(date -u +%s)
+          ELAPSED=$((CURRENT_TIME - ${{ env.START_TIME }}))
+          if [ $ELAPSED -gt ${{ env.DURATION_SECONDS }} ]; then
+            echo "Monitoring period expired"
+            exit 0
+          fi
+
+      - name: Run monitoring check
+        run: |
+          python src/monitoring/agent.py
+        env:
+          STREAMLIT_API_URL: ${{ secrets.STREAMLIT_API_URL }}
+          MONITORING_INTERVAL: "3600"  # 1 hour
+          ALERT_THRESHOLD: "2"
+          EMAIL_RECIPIENT: "temangroup1930@gmail.com"
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_HOST: "smtp.gmail.com"
+          EMAIL_PORT: "587"
+
+      - name: Report status
+        run: |
+          echo "Hourly monitoring check completed for hour ${{ matrix.hour }}"

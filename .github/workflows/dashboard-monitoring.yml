@@ -1,0 +1,79 @@
+name: Dashboard Monitoring
+
+on:
+  schedule:
+    # Run every 30 minutes
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  monitor-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Chrome for Selenium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-chromedriver
+
+      - name: Run dashboard monitoring
+        run: |
+          python src/monitoring/dashboard_monitor.py
+        env:
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL || 'https://africa-usa-trade-intelligence.onrender.com' }}
+          STREAMLIT_API_URL: ${{ secrets.STREAMLIT_API_URL }}
+          DASHBOARD_MONITOR_INTERVAL: "1800"  # 30 minutes
+
+      - name: Report status
+        run: |
+          echo "Dashboard monitoring check completed"name: Dashboard Monitoring
+
+on:
+  schedule:
+    # Run every 30 minutes
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  monitor-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Chrome for Selenium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-chromedriver
+
+      - name: Run dashboard monitoring
+        run: |
+          python src/monitoring/dashboard_monitor.py
+        env:
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL || 'https://africa-usa-trade-intelligence.onrender.com' }}
+          STREAMLIT_API_URL: ${{ secrets.STREAMLIT_API_URL }}
+          DASHBOARD_MONITOR_INTERVAL: "1800"  # 30 minutes
+
+      - name: Report status
+        run: |
+          echo "Dashboard monitoring check completed"
