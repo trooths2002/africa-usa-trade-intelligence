@@ -1,0 +1,127 @@
+# Git
+.git
+.gitignore
+.github
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+build
+develop-eggs
+dist
+downloads
+eggs
+.eggs
+lib
+lib64
+parts
+sdist
+var
+wheels
+*.egg-info
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv
+venv/
+ENV/
+env/
+.env
+.venv
+env.bak/
+venv.bak/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs and data (but keep structure)
+logs/*
+!logs/.gitkeep
+data/*
+!data/.gitkeep
+!data/samples/
+
+# Documentation (not needed in container)
+*.md
+docs/
+
+# Test files
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Development files
+.env.example
+docker-compose.yml
+docker-compose.override.yml
+Dockerfile*
+
+# Large data files
+*.csv
+*.json
+*.xlsx
+*.pdf
+!data/samples/*.json
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.log
+
+# Node modules (if any)
+node_modules/
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3

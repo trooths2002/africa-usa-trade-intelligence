@@ -1,0 +1,74 @@
+name: MCP Automation Pipeline
+
+on:
+  schedule:
+    # Run every hour
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  quick-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        # Install additional dependencies for automation
+        pip install smtplib email-mime-multipart email-mime-text
+
+    - name: Run Phase 0 Quick Checks
+      id: quick_checks
+      run: |
+        python scripts/automation/run_quick_scan.py
+      continue-on-error: true
+
+    - name: Upload scan logs
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: mcp-scan-logs-${{ github.run_number }}
+        path: |
+          logs/
+          *.log
+        retention-days: 7
+
+    - name: Send email summary
+      if: always()
+      env:
+        SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+        NOTIFY_EMAIL_TO: ${{ secrets.NOTIFY_EMAIL_TO }}
+        NOTIFY_EMAIL_FROM: ${{ secrets.NOTIFY_EMAIL_FROM }}
+        SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+        SMTP_PORT: ${{ secrets.SMTP_PORT }}
+        SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+        SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+      run: |
+        python scripts/automation/send_email_summary.py \
+          --status "${{ steps.quick_checks.outcome }}" \
+          --run-id "${{ github.run_number }}" \
+          --workflow-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      continue-on-error: true
+
+    - name: Log completion
+      run: |
+        echo "MCP automation pipeline completed"
+        echo "Status: ${{ steps.quick_checks.outcome }}"
+        echo "Artifacts uploaded: mcp-scan-logs-${{ github.run_number }}"

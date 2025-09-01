@@ -1,0 +1,79 @@
+services:
+  market_intelligence:
+    build:
+      context: .
+      dockerfile: Dockerfile.market_intelligence
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+      - MCP_SERVER_HOST=0.0.0.0
+      - MCP_SERVER_PORT=8000
+      - MEMORY_FILE_PATH=/app/data/memory.json
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  memory:
+    image: node:18-alpine
+    command: npx server-memory
+    ports:
+      - "3001:3001"
+    environment:
+      - MEMORY_FILE_PATH=/data/memory.json
+      - PORT=3001
+    volumes:
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      - PYTHONPATH=/app
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+      - STREAMLIT_SERVER_HEADLESS=true
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+      - PORT=8501
+      - MCP_SERVER_URL=http://market_intelligence:8000
+      - MEMORY_SERVER_URL=http://memory:3001
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      market_intelligence:
+        condition: service_healthy
+      memory:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+networks:
+  default:
+    name: africa-trade-intelligence
+
+volumes:
+  data:
+  logs:
