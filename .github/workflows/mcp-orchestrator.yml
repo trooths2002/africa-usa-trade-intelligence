@@ -1,0 +1,32 @@
+name: MCP Orchestrator
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # every 15 minutes
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  orchestrator:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install PyGithub requests
+
+      - name: Run MCP orchestrator
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEPLOYED_URL: "https://africa-usa-trade-intelligence.onrender.com"
+        run: python .github/mcp/orchestrator.py

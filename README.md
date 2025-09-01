@@ -61,6 +61,9 @@ africa-usa-trade-intelligence/
 │   │   ├── dashboard_monitor.py # Dashboard monitor
 │   │   └── dashboard.py       # Monitoring web interface
 │   └── test_imports.py        # Import testing
+├── .github/
+│   ├── workflows/             # GitHub Actions workflows
+│   └── mcp/                   # MCP orchestrator and agents
 └── tests/
 ```
 
@@ -103,6 +106,12 @@ africa-usa-trade-intelligence/
 - Automatic correction of common issues
 - Real-time dashboard for monitoring results
 
+### 7. **MCP Orchestration**
+- Automated task coordination using GitHub Issues
+- Health monitoring and incident management
+- Auto-fix agents for formatting and linting
+- Human-agent collaboration through issue tracking
+
 ## 🏗️ Standard Architecture
 
 The platform follows a clean architecture with clear separation of concerns:
@@ -113,11 +122,14 @@ graph TB
     B --> C[Data Collection Service]
     B --> D[Intelligence Service]
     B --> E[Monitoring Service]
-    C --> F[External APIs]
+    B --> F[MCP Orchestration]
+    C --> G[External APIs]
     D --> C
     E --> B
     E --> C
     E --> D
+    F --> B
+    F --> E
 ```
 
 See [STANDARD_ARCHITECTURE.md](STANDARD_ARCHITECTURE.md) for detailed architecture documentation.
@@ -176,7 +188,7 @@ See [STANDARD_ARCHITECTURE.md](STANDARD_ARCHITECTURE.md) for detailed architectu
 ### Docker (Self-Hosted)
 1. Build the Docker image:
    ```bash
-   docker build -t africa-usa-trade-intelligence .
+   docker build -t africa-usa-trade-intelligence
    ```
 2. Run the container:
    ```bash
@@ -192,12 +204,14 @@ This platform features a fully automated continuous development system that cont
 - **Testing Agent** - Runs comprehensive test suites automatically
 - **Deployment Agent** - Manages automated deployment to production
 - **Monitoring Agent** - Tracks system health and performance 24/7
+- **Auto-Fix Agent** - Automatically applies formatting and linting fixes
 
 ### GitHub Actions Workflows
 - **Daily Improvement** - Automated code analysis and enhancement
 - **Continuous Testing** - Runs tests on every commit
 - **Automated Deployment** - Deploys improvements to production
 - **System Monitoring** - Continuous health checks and alerting
+- **MCP Orchestration** - Task coordination and incident management
 
 ## 🔍 System Monitoring
 
@@ -212,6 +226,28 @@ The platform includes a comprehensive monitoring system that ensures optimal per
 
 ### Monitoring Documentation
 See [SYSTEM_MONITORING.md](SYSTEM_MONITORING.md) for complete monitoring system documentation.
+
+## 🤝 MCP Orchestration System
+
+The platform includes an MCP (Model Context Protocol) Orchestration system that coordinates tasks between human and automated agents:
+
+### Key Components
+- **MCP Orchestrator** - Runs every 15 minutes to check system health and update task queue
+- **Task Queue Issue** - Central coordination point in GitHub Issues
+- **Auto-Fix Agent** - Automatically applies formatting and linting fixes
+- **Incident Management** - Creates issues when system health fails
+
+### How It Works
+1. The orchestrator runs every 15 minutes
+2. It checks the deployed system health via the `/health` endpoint
+3. It updates the "MCP Orchestrator - Task Queue" issue with current status
+4. If health fails, it creates an incident issue
+5. Agents (human or automated) read the task queue to know what to work on
+6. Agents can apply fixes and create PRs
+7. All work is tracked through comments on the task queue issue
+
+### MCP Documentation
+See [MCP_ORCHESTRATOR.md](MCP_ORCHESTRATOR.md) for complete MCP orchestration system documentation.
 
 ## 📦 Core Components
 
@@ -260,6 +296,16 @@ See [SYSTEM_MONITORING.md](SYSTEM_MONITORING.md) for complete monitoring system 
 - Web interface for viewing monitoring results
 - Real-time system status visualization
 - Historical data analysis and trends
+
+### 9. MCP Orchestrator (`.github/mcp/orchestrator.py`)
+- Automated task coordination
+- Health monitoring and incident management
+- Task queue maintenance in GitHub Issues
+
+### 10. Auto-Fix Agent (`.github/mcp/auto_fix_agent.py`)
+- Automated formatting and linting fixes
+- Test validation before and after fixes
+- Pull request creation for human review
 
 ## 🛠️ API Endpoints
 
