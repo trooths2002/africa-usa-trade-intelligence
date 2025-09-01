@@ -1,0 +1,150 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment even if no changes'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      if: ${{ secrets.DOCKERHUB_USERNAME && secrets.DOCKERHUB_TOKEN }}
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Extract metadata for market intelligence service
+      id: meta-market
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ secrets.DOCKERHUB_USERNAME }}/africa-trade-intelligence
+        tags: |
+          type=ref,event=branch
+          type=sha
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Extract metadata for dashboard service
+      id: meta-dashboard
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ secrets.DOCKERHUB_USERNAME }}/africa-trade-dashboard
+        tags: |
+          type=ref,event=branch
+          type=sha
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push market intelligence Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.market_intelligence
+        push: ${{ secrets.DOCKERHUB_USERNAME && secrets.DOCKERHUB_TOKEN }}
+        tags: ${{ steps.meta-market.outputs.tags }}
+        labels: ${{ steps.meta-market.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build and push dashboard Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.dashboard
+        push: ${{ secrets.DOCKERHUB_USERNAME && secrets.DOCKERHUB_TOKEN }}
+        tags: ${{ steps.meta-dashboard.outputs.tags }}
+        labels: ${{ steps.meta-dashboard.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Deploy to Render - Market Intelligence Service
+      if: ${{ secrets.RENDER_API_KEY && secrets.RENDER_SERVICE_ID }}
+      run: |
+        curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
+          -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "clearCache": false
+          }'
+      continue-on-error: true
+
+    - name: Deploy to Render - Dashboard Service
+      if: ${{ secrets.RENDER_API_KEY && secrets.RENDER_DASHBOARD_SERVICE_ID }}
+      run: |
+        curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_DASHBOARD_SERVICE_ID }}/deploys" \
+          -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "clearCache": false
+          }'
+      continue-on-error: true
+
+    - name: Notify deployment status
+      if: always()
+      env:
+        NOTIFY_EMAIL_TO: ${{ secrets.NOTIFY_EMAIL_TO }}
+        NOTIFY_EMAIL_FROM: ${{ secrets.NOTIFY_EMAIL_FROM }}
+        SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+        SMTP_PORT: ${{ secrets.SMTP_PORT }}
+        SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+        SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+      run: |
+        echo "Deployment completed for commit ${{ github.sha }}"
+        echo "Market Intelligence Image Tags: ${{ steps.meta-market.outputs.tags }}"
+        echo "Dashboard Image Tags: ${{ steps.meta-dashboard.outputs.tags }}"
+        # Optionally send email notification
+        python -c "
+        import os
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+        
+        if all(os.getenv(key) for key in ['SMTP_SERVER', 'NOTIFY_EMAIL_TO', 'NOTIFY_EMAIL_FROM']):
+            msg = MIMEMultipart()
+            msg['From'] = os.getenv('NOTIFY_EMAIL_FROM')
+            msg['To'] = os.getenv('NOTIFY_EMAIL_TO')
+            msg['Subject'] = 'Africa Trade Intelligence - Deployment Complete'
+            
+            body = f'''
+            Deployment completed successfully!
+            
+            Commit: ${{ github.sha }}
+            Branch: ${{ github.ref_name }}
+            Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            
+            Services deployed:
+            - Market Intelligence Service
+            - Streamlit Dashboard
+            '''
+            
+            msg.attach(MIMEText(body, 'plain'))
+            
+            try:
+                server = smtplib.SMTP(os.getenv('SMTP_SERVER'), int(os.getenv('SMTP_PORT', '587')))
+                server.starttls()
+                if os.getenv('SMTP_USERNAME'):
+                    server.login(os.getenv('SMTP_USERNAME'), os.getenv('SMTP_PASSWORD'))
+                server.send_message(msg)
+                server.quit()
+                print('Email notification sent')
+            except Exception as e:
+                print(f'Failed to send email: {e}')
+        else:
+            print('Email credentials not configured, skipping notification')
+        "
+      continue-on-error: true
