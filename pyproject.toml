@@ -1,7 +1,7 @@
 [tool.ruff]
 # Minimal ruff configuration used by CI
 line-length = 88
-extend-ignore = ["E203", "W503"]
+ignore = ["E203"]
 select = ["E", "F", "W", "C90"]
 exclude = [".git", "venv", "dist", "build", "__pycache__", "data"]
 

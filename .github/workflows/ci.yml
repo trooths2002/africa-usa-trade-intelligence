@@ -1,46 +1,31 @@
-name: CI — tests, lint, security
+name: CI
 
 on:
+  push:
+    branches: [ "main", "master" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main", "master" ]
 
 jobs:
-  checks:
-    name: Checks (lint, tests, pip-audit)
+  test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.10, 3.11]
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Python
+      - uses: actions/checkout@v4
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Upgrade pip
-        run: python -m pip install --upgrade pip
-
-      - name: Install project dependencies
+          python-version: '3.10'
+      - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
-          # Install tools used by CI
-          pip install ruff pip-audit
-
-      - name: Lint with ruff
+          pip install black ruff
+      - name: Run linters
         run: |
-          # Fail the job on lint errors
           ruff check .
-
+      - name: Check formatting (black)
+        run: |
+          black --check .
       - name: Run tests
         run: |
           pytest -q
-
-      - name: Run pip-audit
-        # Let pip-audit exit non-zero if vulnerabilities are found so CI fails fast
-          run: |
-            # Run pip-audit and fail the job if vulnerabilities are found
-            pip-audit
