@@ -1,6 +1,6 @@
 name: MCP Automation with SMTP Email
 
-on:
+'on':
   schedule:
     # Run every hour at the top of the hour
     - cron: '0 * * * *'
