@@ -134,6 +134,34 @@ See [STANDARD_ARCHITECTURE.md](STANDARD_ARCHITECTURE.md) for detailed architectu
    - Dashboard: http://localhost:8501
    - API Documentation: http://localhost:8000/docs
 
+## ☁️ Deployment Options
+
+### Render (Recommended Free Option)
+1. Fork this repository to your GitHub account
+2. Sign up at [render.com](https://render.com)
+3. Create a new Web Service
+4. Connect your GitHub repository
+5. Set the following environment variables:
+   - `PYTHON_VERSION`: 3.10.8
+6. Deploy!
+
+### Railway (Alternative Free Option)
+1. Fork this repository to your GitHub account
+2. Sign up at [railway.app](https://railway.app)
+3. Create a new project
+4. Connect your GitHub repository
+5. Deploy!
+
+### Docker (Self-Hosted)
+1. Build the Docker image:
+   ```bash
+   docker build -t africa-usa-trade-intelligence .
+   ```
+2. Run the container:
+   ```bash
+   docker run -p 8000:8000 africa-usa-trade-intelligence
+   ```
+
 ## 📦 Core Components
 
 ### 1. Streamlit Dashboard (`src/dashboard/app.py`)
@@ -197,44 +225,3 @@ See [STANDARD_ARCHITECTURE.md](STANDARD_ARCHITECTURE.md) for detailed architectu
 ### 4. Data Products
 - **Price**: Subscription model
 - **Features**: Real-time data feeds, market alerts, trend analysis
-
-## 🔧 Development
-
-### Testing Imports
-```bash
-cd src
-python test_imports.py
-```
-
-### Running Individual Services
-```bash
-# Run API server
-uvicorn api.main:app --host 0.0.0.0 --port 8000
-
-# Run dashboard
-streamlit run dashboard/app.py --server.port 8501
-
-# Run intelligence server
-python intelligence/server.py
-```
-
-## 📚 Documentation
-
-- [STANDARD_ARCHITECTURE.md](STANDARD_ARCHITECTURE.md) - Platform architecture
-- API documentation available at http://localhost:8000/docs when running
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙋 Support
-
-For support, contact Terrence Dupree at Free World Trade Inc.
