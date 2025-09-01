@@ -1,0 +1,36 @@
+name: Auto-fix (format & lint)
+
+on:
+  schedule:
+    - cron: '30 2 * * *'  # daily at 02:30 UTC
+  workflow_dispatch: {}
+
+jobs:
+  autofix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install tools
+        run: pip install black ruff
+
+      - name: Run autoformatters
+        run: |
+          black .
+          ruff check --fix .
+
+      - name: Create Pull Request with fixes
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: auto-format and lint fixes"
+          branch: "auto/format-fixes-${{ github.run_id }}"
+          title: "Auto-format & lint fixes"
+          body: |
+            Automated code formatting and lint fixes applied by workflow.

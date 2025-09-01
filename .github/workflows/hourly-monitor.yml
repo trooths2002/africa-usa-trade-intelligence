@@ -1,0 +1,61 @@
+name: Hourly Health Monitor
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # every hour at minute 0
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+  contents: write
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install monitoring deps
+        run: pip install requests
+
+      - name: Run health check
+        env:
+          DEPLOYED_URL: ${{ secrets.DEPLOYED_URL }}
+        run: |
+          python .github/monitor/remote_health_check.py || true
+
+      - name: Create issue on failure
+        if: failure() || steps.checkout.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const body = fs.existsSync('.github/monitor/latest_report.md') ? fs.readFileSync('.github/monitor/latest_report.md', 'utf8') : 'No report found';
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[monitor] Deployed health check failed - ${new Date().toISOString()}`,
+              body
+            });
+
+      - name: Send email summary
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_HOST }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USER }}
+          password: ${{ secrets.SMTP_PASS }}
+          subject: "Africa-USA Trade Intelligence - Health Check Report"
+          to: "temangroup1930@gmail.com"
+          from: ${{ secrets.EMAIL_FROM }}
+          body: |
+            See attached report (below):
+            -----------------------------
+            $(cat .github/monitor/latest_report.md || echo "No report generated")
