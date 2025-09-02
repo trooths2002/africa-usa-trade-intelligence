@@ -1,0 +1,28 @@
+# Ignore Python caches and VCS
+__pycache__/
+*.pyc
+.git/
+.gitignore
+
+# CI and tests
+.github/
+tests/
+
+# OS/editor junk
+.DS_Store
+*.swp
+
+# Build caches
+*.egg-info/
+.dist/
+.build/
+.cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Node/Streamlit temp (just in case)
+node_modules/
+.streamlit/
+

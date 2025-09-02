@@ -1,0 +1,21 @@
+# Streamlit dashboard container
+FROM python:3.10-slim AS base
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt /app/requirements.txt
+COPY src/requirements.txt /app/src-requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt && \
+    pip install --no-cache-dir -r /app/src-requirements.txt
+
+COPY . /app
+
+# STREAMLIT_API_URL will be provided by compose
+EXPOSE 8501
+CMD ["python", "-m", "streamlit", "run", "src/dashboard/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+
