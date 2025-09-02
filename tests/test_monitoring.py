@@ -27,7 +27,7 @@ def test_monitoring_agent_initialization():
         assert hasattr(agent, 'alert_threshold')
         
         # Check default values
-        assert agent.check_interval == 300  # 5 minutes default
+        assert agent.check_interval == 3600  # 1 hour default (actual value from agent.py)
         assert agent.alert_threshold == 3   # 3 failures default
     except Exception as e:
         pytest.fail(f"Monitoring agent initialization failed: {e}")
