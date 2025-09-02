@@ -325,6 +325,67 @@ for i, opp in enumerate(opportunities):
         </div>
         """, unsafe_allow_html=True)
 
+# Commodity Price Trends (World Bank)
+st.markdown("## 📈 Commodity Price Trends")
+with st.expander("Coffee and Cocoa Price Trends (World Bank)", expanded=False):
+    def fetch_wb_series(indicator: str, start_year: str = "2020"):
+        url = f"https://api.worldbank.org/v2/country/WLD/indicator/{indicator}"
+        params = {"format": "json", "date": f"{start_year}:2025", "per_page": "200"}
+        try:
+            resp = requests.get(url, params=params, timeout=20)
+            if resp.status_code == 200:
+                payload = resp.json()
+                if isinstance(payload, list) and len(payload) > 1 and isinstance(payload[1], list):
+                    series = []
+                    for row in payload[1]:
+                        year = row.get("date")
+                        value = row.get("value")
+                        if year and value is not None:
+                            series.append({"date": int(year), "value": value})
+                    return sorted(series, key=lambda x: x["date"])
+        except Exception:
+            pass
+        return []
+
+    coffee = fetch_wb_series("PCOFFOTMUSD")
+    cocoa = fetch_wb_series("PCOCO_USD")
+    cols = st.columns(2)
+    if coffee:
+        with cols[0]:
+            df = pd.DataFrame(coffee)
+            fig = px.line(df, x="date", y="value", title="Coffee (USD/mt)")
+            st.plotly_chart(fig, use_container_width=True)
+    if cocoa:
+        with cols[1]:
+            df = pd.DataFrame(cocoa)
+            fig = px.line(df, x="date", y="value", title="Cocoa (USD/mt)")
+            st.plotly_chart(fig, use_container_width=True)
+
+# FX Trends (ExchangeRate.host)
+st.markdown("## 💱 FX Trends (USD base)")
+with st.expander("ETB, GHS, KES, NGN (last 30 days)", expanded=False):
+    import datetime as dt
+    symbols = ["ETB", "GHS", "KES", "NGN"]
+    end = dt.date.today()
+    start = end - dt.timedelta(days=30)
+    try:
+        url = "https://api.exchangerate.host/timeseries"
+        params = {"base": "USD", "symbols": ','.join(symbols), "start_date": start.isoformat(), "end_date": end.isoformat()}
+        resp = requests.get(url, params=params, timeout=20)
+        if resp.status_code == 200 and resp.json().get("success"):
+            rates = resp.json().get("rates", {})
+            # Convert to DataFrame
+            rows = []
+            for date_str, sym_map in rates.items():
+                for sym, val in sym_map.items():
+                    rows.append({"date": date_str, "currency": sym, "rate": val})
+            if rows:
+                df = pd.DataFrame(rows)
+                fig = px.line(df, x="date", y="rate", color="currency", title="USD Base FX Rates")
+                st.plotly_chart(fig, use_container_width=True)
+    except Exception:
+        st.info("Could not load FX timeseries. Showing nothing.")
+
 # Footer
 st.markdown("---")
 st.markdown("### 🚀 Free World Trade Inc. - Terrence Dupree")
