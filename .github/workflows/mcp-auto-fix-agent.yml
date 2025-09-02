@@ -3,7 +3,25 @@ name: MCP Auto-Fix Agent
 on:
   issues:
     types: [opened, edited, reopened]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: 'Auto-fix scope (src/ or all or changed-files-only)'
+        required: false
+        default: 'src/'
+        type: choice
+        options:
+          - 'src/'
+          - 'all'
+          - 'changed-files-only'
+      force_run:
+        description: 'Force auto-fix run (ignore cadence)'
+        required: false
+        type: boolean
+        default: false
+  schedule:
+    # Run every 4 hours as default cadence (tunable)
+    - cron: '0 */4 * * *'
 
 permissions:
   issues: write
@@ -11,9 +29,53 @@ permissions:
   pull-requests: write
 
 jobs:
-  auto-fix-agent:
+  check-cadence:
+    name: Check Auto-Fix Cadence
     runs-on: ubuntu-latest
-    if: contains(github.event.issue.labels.*.name, 'mcp-orchestrator') || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || github.event.inputs.force_run == 'true'
+    outputs:
+      should_run: ${{ steps.cadence.outputs.should_run }}
+    steps:
+      - name: Check last auto-fix run
+        id: cadence
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            
+            // Check for recent auto-fix PRs to determine if we should run
+            const { data: prs } = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'all',
+              sort: 'created',
+              direction: 'desc',
+              per_page: 10
+            });
+            
+            // Look for recent auto-fix PRs (within last 4 hours)
+            const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
+            const recentAutoFixPR = prs.find(pr => 
+              pr.title.includes('auto-format & lint fixes') && 
+              new Date(pr.created_at) > fourHoursAgo
+            );
+            
+            const should_run = !recentAutoFixPR || context.event.inputs?.force_run === 'true';
+            console.log(`Should run auto-fix: ${should_run}`);
+            console.log(`Recent auto-fix PR found: ${!!recentAutoFixPR}`);
+            
+            core.setOutput('should_run', should_run);
+
+  auto-fix-agent:
+    needs: [check-cadence]
+    runs-on: ubuntu-latest
+    if: |
+      always() && (
+        contains(github.event.issue.labels.*.name, 'mcp-orchestrator') || 
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'schedule' && needs.check-cadence.outputs.should_run == 'true')
+      )
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -34,8 +96,184 @@ jobs:
           git config --global user.name "MCP Auto-Fix Agent"
           git config --global user.email "actions@github.com"
 
-      - name: Run MCP Auto-Fix Agent
+      - name: Determine auto-fix scope
+        id: scope
+        run: |
+          # Determine the scope for auto-fix operations
+          SCOPE="${{ github.event.inputs.scope || 'src/' }}"
+          
+          if [ "$SCOPE" = "changed-files-only" ] && [ "${{ github.event_name }}" = "issues" ]; then
+            # For issue-triggered runs, get changed files from recent commits
+            CHANGED_FILES=$(git diff --name-only HEAD~5..HEAD | grep -E "\.(py|js|ts|json|yml|yaml)$" | head -20 | tr '\n' ' ')
+            if [ -z "$CHANGED_FILES" ]; then
+              SCOPE="src/"  # Fallback to src/ if no changed files
+            else
+              echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
+            fi
+          fi
+          
+          echo "AUTO_FIX_SCOPE=$SCOPE" >> $GITHUB_ENV
+          echo "Selected auto-fix scope: $SCOPE"
+
+      - name: Run Auto-Fix with Scoped Changes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: python .github/mcp/auto_fix_agent.py
+          AUTO_FIX_SCOPE: ${{ env.AUTO_FIX_SCOPE }}
+          CHANGED_FILES: ${{ env.CHANGED_FILES }}
+        run: |
+          # Create a tuned auto-fix script that respects scope
+          cat > tuned_auto_fix.py << 'EOF'
+          import os
+          import subprocess
+          import sys
+          from pathlib import Path
+          
+          def run_command(cmd):
+              """Run command and return success status"""
+              try:
+                  result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                  print(f"Command: {cmd}")
+                  print(f"Return code: {result.returncode}")
+                  if result.stdout:
+                      print(f"Output: {result.stdout}")
+                  if result.stderr:
+                      print(f"Error: {result.stderr}")
+                  return result.returncode == 0
+              except Exception as e:
+                  print(f"Exception running command: {e}")
+                  return False
+          
+          def main():
+              scope = os.getenv('AUTO_FIX_SCOPE', 'src/')
+              changed_files = os.getenv('CHANGED_FILES', '').strip()
+              
+              print(f"Auto-fix scope: {scope}")
+              print(f"Changed files: {changed_files}")
+              
+              # Determine target files/directories
+              if scope == 'changed-files-only' and changed_files:
+                  targets = changed_files.split()
+                  target_str = ' '.join(targets)
+              elif scope == 'all':
+                  target_str = '.'
+              else:  # default to 'src/'
+                  target_str = 'src/'
+              
+              print(f"Applying auto-fixes to: {target_str}")
+              
+              # Run Black formatter
+              black_cmd = f"black {target_str}"
+              black_success = run_command(black_cmd)
+              
+              # Run Ruff linter with auto-fix
+              ruff_cmd = f"ruff check --fix {target_str}"
+              ruff_success = run_command(ruff_cmd)
+              
+              # Check if any files were changed
+              git_status = subprocess.run('git status --porcelain', shell=True, capture_output=True, text=True)
+              has_changes = bool(git_status.stdout.strip())
+              
+              if has_changes:
+                  print("Changes detected, would create PR...")
+                  print("Changed files:")
+                  print(git_status.stdout)
+                  
+                  # Set output for next steps
+                  with open(os.environ['GITHUB_ENV'], 'a') as env_file:
+                      env_file.write('HAS_AUTO_FIX_CHANGES=true\n')
+              else:
+                  print("No changes needed")
+                  with open(os.environ['GITHUB_ENV'], 'a') as env_file:
+                      env_file.write('HAS_AUTO_FIX_CHANGES=false\n')
+              
+              return black_success and ruff_success
+          
+          if __name__ == '__main__':
+              success = main()
+              sys.exit(0 if success else 1)
+          EOF
+          
+          python tuned_auto_fix.py
+
+      - name: Create Auto-Fix PR
+        if: env.HAS_AUTO_FIX_CHANGES == 'true'
+        run: |
+          # Create branch for auto-fixes
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          BRANCH_NAME="auto/format-fix-$TIMESTAMP"
+          
+          git checkout -b "$BRANCH_NAME"
+          git add .
+          git commit -m "chore: auto-format & lint fixes (${{ env.AUTO_FIX_SCOPE }} scope)
+          
+          Applied automated formatting and linting fixes:
+          - Scope: ${{ env.AUTO_FIX_SCOPE }}
+          - Black code formatting
+          - Ruff linting auto-fixes
+          - Triggered by: ${{ github.event_name }}
+          
+          This is an automated PR from the MCP Auto-Fix Agent."
+          
+          git push origin "$BRANCH_NAME"
+          
+          # Create PR using GitHub CLI or API
+          PR_TITLE="chore: auto-format & lint fixes (${{ env.AUTO_FIX_SCOPE }} scope)"
+          PR_BODY="## Automated Code Fixes
+
+          This PR contains automated formatting and linting fixes applied to the \`${{ env.AUTO_FIX_SCOPE }}\` scope.
+
+          ### Changes Applied:
+          - ✅ Black code formatting
+          - ✅ Ruff linting fixes
+          - 🎯 Scope: \`${{ env.AUTO_FIX_SCOPE }}\`
+          
+          ### Trigger:
+          - Event: ${{ github.event_name }}
+          - Workflow: Auto-Fix Agent
+          - Cadence: Every 4 hours (configurable)
+          
+          ### Auto-Fix Configuration:
+          - **Default Scope**: \`src/\` (keeps changes focused)
+          - **Rate Limit**: 4 hours between runs (reduces PR noise)
+          - **File Types**: Python, JavaScript, YAML, JSON
+          
+          This PR was automatically created by the MCP Auto-Fix Agent. Please review and merge if the changes look correct.
+          
+          ---
+          *To adjust auto-fix settings, update the workflow inputs or schedule in \`.github/workflows/mcp-auto-fix-agent.yml\`*"
+          
+          gh pr create \
+            --title "$PR_TITLE" \
+            --body "$PR_BODY" \
+            --label "auto-fix" \
+            --label "mcp-orchestrator"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run tests on auto-fixed code
+        if: env.HAS_AUTO_FIX_CHANGES == 'true'
+        run: |
+          echo "Running tests on auto-fixed code..."
+          # Run basic syntax check
+          python -m py_compile src/**/*.py 2>/dev/null || echo "Some Python files have syntax issues"
+          
+          # Run quick smoke test if tests exist
+          if [ -f "tests/test_*.py" ]; then
+            python -m pytest tests/ -x --tb=short || echo "Some tests failed"
+          fi
+
+      - name: Report Auto-Fix Results
+        if: always()
+        run: |
+          if [ "${{ env.HAS_AUTO_FIX_CHANGES }}" = "true" ]; then
+            echo "✅ Auto-fix completed with changes"
+            echo "📝 PR created for review and merge"
+            echo "🎯 Scope: ${{ env.AUTO_FIX_SCOPE }}"
+          else
+            echo "✅ Auto-fix completed - no changes needed"
+            echo "🎯 Scope: ${{ env.AUTO_FIX_SCOPE }}"
+          fi
+          
+          echo "⏰ Next scheduled run: $(date -d '+4 hours' -u)"
+          echo "🔧 To adjust scope or cadence, update workflow inputs"

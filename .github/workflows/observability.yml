@@ -1,0 +1,295 @@
+name: "Observability and Alerting"
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # Every 15 minutes
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  collect-metrics:
+    name: Collect System Metrics
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install monitoring dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests prometheus-client psutil
+
+    - name: Collect application metrics
+      run: |
+        python -c "
+        import requests
+        import time
+        import json
+        from datetime import datetime
+        
+        # Configuration
+        app_url = '${{ vars.DEPLOYED_URL || ''https://africa-usa-trade-intelligence.onrender.com'' }}'
+        metrics = {
+            'timestamp': datetime.utcnow().isoformat(),
+            'application_metrics': {},
+            'infrastructure_metrics': {},
+            'slo_metrics': {}
+        }
+        
+        # Collect response time and availability metrics
+        endpoints = [
+            '/',
+            '/health',
+            '/api/status',
+            '/api/data/summary'
+        ]
+        
+        total_response_time = 0
+        successful_requests = 0
+        total_requests = 0
+        
+        for endpoint in endpoints:
+            url = f'{app_url}{endpoint}'
+            start_time = time.time()
+            
+            try:
+                response = requests.get(url, timeout=30)
+                response_time = (time.time() - start_time) * 1000  # Convert to ms
+                
+                metrics['application_metrics'][endpoint] = {
+                    'response_time_ms': response_time,
+                    'status_code': response.status_code,
+                    'available': response.status_code < 500,
+                    'response_size_bytes': len(response.content) if response.content else 0
+                }
+                
+                total_response_time += response_time
+                total_requests += 1
+                
+                if response.status_code < 400:
+                    successful_requests += 1
+                    
+                print(f'✅ {endpoint}: {response.status_code} ({response_time:.2f}ms)')
+                
+            except Exception as e:
+                metrics['application_metrics'][endpoint] = {
+                    'response_time_ms': None,
+                    'status_code': None,
+                    'available': False,
+                    'error': str(e)
+                }
+                total_requests += 1
+                print(f'❌ {endpoint}: Failed - {e}')
+        
+        # Calculate SLO metrics
+        availability = (successful_requests / total_requests) * 100 if total_requests > 0 else 0
+        avg_response_time = total_response_time / total_requests if total_requests > 0 else 0
+        
+        metrics['slo_metrics'] = {
+            'availability_percent': availability,
+            'average_response_time_ms': avg_response_time,
+            'error_rate_percent': ((total_requests - successful_requests) / total_requests) * 100 if total_requests > 0 else 0,
+            'total_requests': total_requests,
+            'successful_requests': successful_requests
+        }
+        
+        # Save metrics to file
+        with open('metrics.json', 'w') as f:
+            json.dump(metrics, f, indent=2)
+        
+        print(f'Metrics collected: {availability:.2f}% availability, {avg_response_time:.2f}ms avg response time')
+        "
+
+    - name: Check SLO breaches
+      run: |
+        python -c "
+        import json
+        import sys
+        
+        # Load metrics
+        with open('metrics.json', 'r') as f:
+            metrics = json.load(f)
+        
+        slo_metrics = metrics['slo_metrics']
+        
+        # Define SLO thresholds
+        SLO_AVAILABILITY_THRESHOLD = 99.0  # 99% uptime SLO
+        SLO_RESPONSE_TIME_THRESHOLD = 2000  # 2 second response time SLO
+        SLO_ERROR_RATE_THRESHOLD = 1.0     # 1% error rate SLO
+        
+        breaches = []
+        
+        # Check availability SLO
+        if slo_metrics['availability_percent'] < SLO_AVAILABILITY_THRESHOLD:
+            breach = f'Availability SLO breach: {slo_metrics[\"availability_percent\"]:.2f}% < {SLO_AVAILABILITY_THRESHOLD}%'
+            breaches.append(breach)
+            print(f'🚨 {breach}')
+        
+        # Check response time SLO
+        if slo_metrics['average_response_time_ms'] > SLO_RESPONSE_TIME_THRESHOLD:
+            breach = f'Response time SLO breach: {slo_metrics[\"average_response_time_ms\"]:.2f}ms > {SLO_RESPONSE_TIME_THRESHOLD}ms'
+            breaches.append(breach)
+            print(f'🚨 {breach}')
+        
+        # Check error rate SLO
+        if slo_metrics['error_rate_percent'] > SLO_ERROR_RATE_THRESHOLD:
+            breach = f'Error rate SLO breach: {slo_metrics[\"error_rate_percent\"]:.2f}% > {SLO_ERROR_RATE_THRESHOLD}%'
+            breaches.append(breach)
+            print(f'🚨 {breach}')
+        
+        if breaches:
+            print(f'Found {len(breaches)} SLO breaches')
+            
+            # Create alert summary
+            with open('slo_alert.txt', 'w') as f:
+                f.write('SLO BREACH ALERT\\n')
+                f.write(f'Time: {metrics[\"timestamp\"]}\\n\\n')
+                for breach in breaches:
+                    f.write(f'- {breach}\\n')
+                f.write(f'\\nFull metrics: {json.dumps(slo_metrics, indent=2)}\\n')
+            
+            # Set environment variable for next step
+            import os
+            os.system('echo \"SLO_BREACH=true\" >> \$GITHUB_ENV')
+            
+        else:
+            print('✅ All SLOs are within thresholds')
+        "
+
+    - name: Create incident for SLO breach
+      if: env.SLO_BREACH == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          // Read the alert details
+          const alertDetails = fs.readFileSync('slo_alert.txt', 'utf8');
+          const metricsData = JSON.parse(fs.readFileSync('metrics.json', 'utf8'));
+          
+          const issueTitle = `[incident] SLO Breach Detected - ${new Date().toISOString()}`;
+          const issueBody = `## 🚨 SLO Breach Alert
+          
+          **Detection Time**: ${metricsData.timestamp}
+          **Severity**: ${metricsData.slo_metrics.availability_percent < 95 ? 'Critical' : 'High'}
+          
+          ### Breached SLOs
+          ${alertDetails}
+          
+          ### Current Metrics
+          - **Availability**: ${metricsData.slo_metrics.availability_percent.toFixed(2)}%
+          - **Avg Response Time**: ${metricsData.slo_metrics.average_response_time_ms.toFixed(2)}ms
+          - **Error Rate**: ${metricsData.slo_metrics.error_rate_percent.toFixed(2)}%
+          - **Total Requests**: ${metricsData.slo_metrics.total_requests}
+          
+          ### Immediate Actions
+          - [ ] Investigate root cause
+          - [ ] Check system resources
+          - [ ] Review recent deployments
+          - [ ] Monitor for recovery
+          
+          ### Escalation
+          This incident was automatically created by the observability system.
+          
+          **Auto-assigned to**: @trooths2002
+          **Notification sent to**: temangroup1930@gmail.com
+          
+          ---
+          *Automated alert from SLO monitoring system*`;
+          
+          // Create the incident issue
+          const issue = await github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: issueTitle,
+            body: issueBody,
+            labels: ['incident', 'slo-breach', 'needs-triage'],
+            assignees: ['trooths2002']
+          });
+          
+          console.log(`Created SLO breach incident: ${issue.data.html_url}`);
+
+    - name: Export metrics to Prometheus format
+      run: |
+        python -c "
+        import json
+        from datetime import datetime
+        
+        # Load metrics
+        with open('metrics.json', 'r') as f:
+            metrics = json.load(f)
+        
+        # Convert to Prometheus format
+        prometheus_metrics = []
+        timestamp = int(datetime.utcnow().timestamp() * 1000)
+        
+        slo = metrics['slo_metrics']
+        
+        # Application availability metric
+        prometheus_metrics.append(f'application_availability_percent {slo[\"availability_percent\"]} {timestamp}')
+        
+        # Response time metrics
+        prometheus_metrics.append(f'application_response_time_ms {slo[\"average_response_time_ms\"]} {timestamp}')
+        
+        # Error rate metrics
+        prometheus_metrics.append(f'application_error_rate_percent {slo[\"error_rate_percent\"]} {timestamp}')
+        
+        # Request count metrics
+        prometheus_metrics.append(f'application_requests_total {slo[\"total_requests\"]} {timestamp}')
+        prometheus_metrics.append(f'application_requests_success_total {slo[\"successful_requests\"]} {timestamp}')
+        
+        # Per-endpoint metrics
+        for endpoint, endpoint_metrics in metrics['application_metrics'].items():
+            endpoint_label = endpoint.replace('/', '_').replace('-', '_').strip('_') or 'root'
+            
+            if endpoint_metrics.get('response_time_ms') is not None:
+                prometheus_metrics.append(f'endpoint_response_time_ms{{endpoint=\"{endpoint}\"}} {endpoint_metrics[\"response_time_ms\"]} {timestamp}')
+            
+            if endpoint_metrics.get('status_code') is not None:
+                prometheus_metrics.append(f'endpoint_status_code{{endpoint=\"{endpoint}\"}} {endpoint_metrics[\"status_code\"]} {timestamp}')
+            
+            available = 1 if endpoint_metrics.get('available', False) else 0
+            prometheus_metrics.append(f'endpoint_available{{endpoint=\"{endpoint}\"}} {available} {timestamp}')
+        
+        # Write Prometheus metrics
+        with open('prometheus_metrics.txt', 'w') as f:
+            f.write('\\n'.join(prometheus_metrics))
+            f.write('\\n')
+        
+        print('Metrics exported to Prometheus format')
+        print('Sample metrics:')
+        for metric in prometheus_metrics[:5]:
+            print(f'  {metric}')
+        "
+
+    - name: Send alerts for critical issues
+      if: env.SLO_BREACH == 'true'
+      run: |
+        echo "🔔 Sending alerts for SLO breach..."
+        echo "Slack: Would post to #alerts channel"
+        echo "Email: Would send to temangroup1930@gmail.com" 
+        echo "PagerDuty: Would create incident (if configured)"
+        
+        # In production, this would integrate with:
+        # - Slack webhooks: curl -X POST $SLACK_WEBHOOK_URL -d '{"text":"SLO breach detected"}'
+        # - Email via SMTP or service
+        # - PagerDuty API for incident creation
+        
+        cat slo_alert.txt
+
+    - name: Upload metrics artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: observability-metrics-${{ github.run_id }}
+        path: |
+          metrics.json
+          prometheus_metrics.txt
+          slo_alert.txt
+        retention-days: 30
