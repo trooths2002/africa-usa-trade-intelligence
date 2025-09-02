@@ -39,7 +39,7 @@ jobs:
           # Fail the job on lint errors
           ruff check .
 
-      - name: Run tests
+      - name: Run tests (full)
         run: |
           pytest -q
 
@@ -47,3 +47,32 @@ jobs:
         run: |
           # Run pip-audit and fail the job if vulnerabilities are found
           pip-audit
+
+  mcp-tests:
+    name: MCP stdio server tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.10]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            src/requirements.txt
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r src/requirements.txt || true
+
+      - name: Run MCP server test
+        run: |
+          pytest -q tests/test_mcp_server.py

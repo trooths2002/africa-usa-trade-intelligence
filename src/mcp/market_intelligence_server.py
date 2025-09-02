@@ -19,8 +19,14 @@ from mcp.server import Server, InitializationOptions  # type: ignore
 from mcp.server.stdio import stdio_server  # type: ignore
 from mcp.types import Tool, TextContent  # type: ignore
 
-# Create the MCP server
+# Project services
+from data.collector import DataCollector  # type: ignore
+from intelligence.server import IntelligenceServer  # type: ignore
+
+# Create the MCP server and project service instances
 server = Server("africa-trade-intelligence")
+_data_collector = DataCollector()
+_intel = IntelligenceServer(_data_collector)
 
 
 def _tool(name: str, description: str, input_schema: Dict[str, Any]) -> Tool:
@@ -175,35 +181,37 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[TextCon
 
         elif name == "scan_arbitrage_opportunities":
             min_margin = float(arguments.get("min_margin", 20.0))
+            # Use IntelligenceServer to gather opportunities
+            intel_data = _intel.get_african_market_intelligence()
+            opportunities = intel_data.get("opportunities", [])
+            # Attach a simple heuristic for gross_margin text and filter if desired
+            enriched = []
+            for opp in opportunities:
+                opp_copy = dict(opp)
+                opp_copy.setdefault("gross_margin", "30-45%")
+                enriched.append(opp_copy)
             result = {
                 "parameters": {"min_margin": min_margin},
-                "high_priority_opportunities": [
-                    {
-                        "product": "Ethiopian Single-Origin Coffee",
-                        "supplier_country": "Ethiopia",
-                        "gross_margin": "35-45%",
-                    },
-                    {
-                        "product": "Ghanaian Organic Shea Butter",
-                        "supplier_country": "Ghana",
-                        "gross_margin": "30-40%",
-                    },
-                ],
+                "high_priority_opportunities": enriched,
+                "market_sentiment": intel_data.get("analysis", {}).get("market_sentiment", "neutral"),
             }
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
         elif name == "analyze_market_trends":
             timeframe = arguments.get("timeframe", "monthly")
             products = arguments.get("products", ["coffee", "cocoa", "cashews"])
+            intel_data = _intel.get_african_market_intelligence()
+            prices = _data_collector.get_commodity_prices().get("prices", {})
             trends = {
                 "timeframe": timeframe,
                 "products": products,
                 "summary": {
                     "overall_market": {
-                        "growth_rate": "+18% YoY",
-                        "trend": "Upward",
+                        "trend": intel_data.get("analysis", {}).get("market_sentiment", "neutral"),
+                        "top_commodities": intel_data.get("analysis", {}).get("top_commodities", []),
                     }
                 },
+                "current_prices": {k: prices.get(k) for k in products if k in prices},
             }
             return [TextContent(type="text", text=json.dumps(trends, indent=2))]
 
