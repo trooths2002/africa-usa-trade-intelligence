@@ -22,6 +22,7 @@ import json
 from pathlib import Path
 from setuptools import setup, find_packages
 
+# For setuptools setup
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
@@ -53,7 +54,12 @@ setup(
     install_requires=requirements,
     entry_points={
         "console_scripts": [
-            "trade-dashboard=web_app.dashboard.main:main",
+            "trade-dashboard=dashboard.app:main",
+            "ingest-census=data.jobs.ingestion_census:main",
+            "ingest-fred=data.jobs.ingestion_fred:main",
+            "ingest-wb=data.jobs.ingestion_wb:main",
+            "refresh-arbitrage=data.jobs.refresh_arbitrage:main",
+            "fx-rates=data.jobs.fx_rates:main",
         ],
     },
 )

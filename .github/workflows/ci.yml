@@ -48,6 +48,22 @@ jobs:
           # Run pip-audit and fail the job if vulnerabilities are found
           pip-audit
 
+      - name: Smoke test
+        env:
+          HEALTH_API_URL: http://localhost:8000
+        run: |
+          # Start the health service in the background
+          uvicorn src.health.main:app --host 0.0.0.0 --port 8000 &
+          sleep 5
+          # Run smoke test
+          python - <<'PY'
+          import requests, os
+          url = os.environ.get("HEALTH_API_URL", "http://localhost:8000")
+          r = requests.get(f"{url}/health", timeout=15)
+          r.raise_for_status()
+          print(f"Health check passed: {r.json()}")
+          PY
+
   mcp-tests:
     name: MCP stdio server tests
     runs-on: ubuntu-latest

@@ -2,7 +2,7 @@ services:
   - type: web
     name: ausa-dashboard
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && pip install alembic
     startCommand: bash bin/start-dashboard.sh
     plan: free
     envVars:
@@ -22,7 +22,7 @@ services:
   - type: web
     name: ausa-health
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && pip install alembic
     startCommand: bash bin/start-health.sh
     plan: free
     envVars:

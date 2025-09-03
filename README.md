@@ -6,7 +6,7 @@ This platform provides real-time market intelligence and arbitrage opportunities
 ## 🎯 Mission
 Become the most sought-after broker salesman for Africa-to-USA agriculture trade by leveraging:
 - **MCP Server Automation** for 10x productivity gains
-- **Real-time Market Intelligence** for arbitrage opportunities
+- **Real-Time Market Intelligence** for arbitrage opportunities
 - **Expert Social Media Positioning** across all platforms
 - **Free Technology Stack** for maximum ROI
 
@@ -45,6 +45,9 @@ africa-usa-trade-intelligence/
 ├── STANDARD_ARCHITECTURE.md
 ├── requirements.txt
 ├── .env.example
+├── Makefile
+├── pyproject.toml
+├── setup.py
 ├── src/
 │   ├── main.py                 # Main entry point
 │   ├── api/
@@ -53,6 +56,7 @@ africa-usa-trade-intelligence/
 │   │   └── app.py             # Streamlit dashboard
 │   ├── data/
 │   │   └── collector.py       # Data collection service
+│   │   └── jobs/              # Data ingestion jobs
 │   ├── intelligence/
 │   │   └── server.py          # MCP intelligence server
 │   ├── monitoring/
@@ -147,9 +151,14 @@ See [STANDARD_ARCHITECTURE.md](STANDARD_ARCHITECTURE.md) for detailed architectu
    cd africa-usa-trade-intelligence
    ```
 
-2. Install dependencies:
+2. Install dependencies (recommended approach):
    ```bash
-   pip install -r src/requirements.txt
+   pip install -e .
+   ```
+
+   Or using Makefile:
+   ```bash
+   make setup
    ```
 
 3. Configure environment variables:
@@ -166,6 +175,43 @@ See [STANDARD_ARCHITECTURE.md](STANDARD_ARCHITECTURE.md) for detailed architectu
 5. Access the platform:
    - Dashboard: http://localhost:8501
    - API Documentation: http://localhost:8000/docs
+
+## 🛠️ Development Commands
+
+The platform includes a Makefile with common development commands:
+
+```bash
+# Install package in development mode
+make setup
+
+# Run data ingestion jobs
+make ingest-census
+make ingest-fred
+make ingest-wb
+make fx-rates
+make arbitrage
+
+# Run all data ingestion jobs
+make all-data
+
+# Run tests
+make test
+
+# Run code linting
+make lint
+
+# Check service health
+make health
+```
+
+Alternatively, you can use the installed console scripts:
+```bash
+ingest-census
+ingest-fred
+ingest-wb
+fx-rates
+refresh-arbitrage
+```
 
 ## ☁️ Deployment Options
 
@@ -198,144 +244,3 @@ See [STANDARD_ARCHITECTURE.md](STANDARD_ARCHITECTURE.md) for detailed architectu
 ## 🤖 Continuous Development System
 
 This platform features a fully automated continuous development system that continuously improves, tests, and deploys enhancements without human intervention. See [CONTINUOUS_DEVELOPMENT.md](CONTINUOUS_DEVELOPMENT.md) for complete details.
-
-### Automated Agents
-- **Code Review Agent** - Continuously analyzes and improves code quality
-- **Testing Agent** - Runs comprehensive test suites automatically
-- **Deployment Agent** - Manages automated deployment to production
-- **Monitoring Agent** - Tracks system health and performance 24/7
-- **Auto-Fix Agent** - Automatically applies formatting and linting fixes
-
-### GitHub Actions Workflows
-- **Daily Improvement** - Automated code analysis and enhancement
-- **Continuous Testing** - Runs tests on every commit
-- **Automated Deployment** - Deploys improvements to production
-- **System Monitoring** - Continuous health checks and alerting
-- **MCP Orchestration** - Task coordination and incident management
-
-## 🔍 System Monitoring
-
-The platform includes a comprehensive monitoring system that ensures optimal performance and reliability:
-
-### Monitoring Features
-- **24/7 Automated Monitoring** - Continuous system health checks
-- **Hourly Email Reports** - Status updates sent to temangroup1930@gmail.com
-- **Automatic Corrections** - Self-healing capabilities for common issues
-- **Real-time Dashboard** - Web interface for monitoring results
-- **Detailed Logging** - Comprehensive audit trail of system events
-
-### Monitoring Documentation
-See [SYSTEM_MONITORING.md](SYSTEM_MONITORING.md) for complete monitoring system documentation.
-
-## 🤝 MCP Orchestration System
-
-The platform includes an MCP (Model Context Protocol) Orchestration system that coordinates tasks between human and automated agents:
-
-### Key Components
-- **MCP Orchestrator** - Runs every 15 minutes to check system health and update task queue
-- **Task Queue Issue** - Central coordination point in GitHub Issues
-- **Auto-Fix Agent** - Automatically applies formatting and linting fixes
-- **Incident Management** - Creates issues when system health fails
-
-### How It Works
-1. The orchestrator runs every 15 minutes
-2. It checks the deployed system health via the `/health` endpoint
-3. It updates the "MCP Orchestrator - Task Queue" issue with current status
-4. If health fails, it creates an incident issue
-5. Agents (human or automated) read the task queue to know what to work on
-6. Agents can apply fixes and create PRs
-7. All work is tracked through comments on the task queue issue
-
-### MCP Documentation
-See [MCP_ORCHESTRATOR.md](MCP_ORCHESTRATOR.md) for complete MCP orchestration system documentation.
-
-## 📦 Core Components
-
-### 1. Streamlit Dashboard (`src/dashboard/app.py`)
-- Single-page application for user interaction
-- Real-time data visualization
-- Custom report generation interface
-- African market intelligence display
-- Configurable API endpoint via environment variables (STREAMLIT_API_URL)
-
-### 2. FastAPI Server (`src/api/main.py`)
-- RESTful API endpoints for all services
-- Health monitoring endpoints
-- African market intelligence API
-- Custom report generation API
-
-### 3. MCP Intelligence Server (`src/intelligence/server.py`)
-- Market analysis and opportunity detection
-- Custom report generation
-- Expert content creation
-- MCP protocol implementation
-
-### 4. Data Collection Service (`src/data/collector.py`)
-- Integration with external APIs
-- Data caching and validation
-- African market data collection
-- Social media sentiment analysis
-
-### 5. Monitoring Service (`src/monitoring/health.py`)
-- Service health checks
-- Performance monitoring
-- System status reporting
-
-### 6. Monitoring Agent (`src/monitoring/agent.py`)
-- Continuous system health monitoring
-- Automated alerting for issues
-- Performance tracking and reporting
-- Hourly email status updates
-
-### 7. Dashboard Monitor (`src/monitoring/dashboard_monitor.py`)
-- Frequent dashboard accessibility checks
-- Interactive element testing with Selenium
-- Detailed dashboard performance metrics
-
-### 8. Monitoring Dashboard (`src/monitoring/dashboard.py`)
-- Web interface for viewing monitoring results
-- Real-time system status visualization
-- Historical data analysis and trends
-
-### 9. MCP Orchestrator (`.github/mcp/orchestrator.py`)
-- Automated task coordination
-- Health monitoring and incident management
-- Task queue maintenance in GitHub Issues
-
-### 10. Auto-Fix Agent (`.github/mcp/auto_fix_agent.py`)
-- Automated formatting and linting fixes
-- Test validation before and after fixes
-- Pull request creation for human review
-
-## 🛠️ API Endpoints
-
-### Health Check
-- `GET /health` - System health status
-
-### Market Data
-- `GET /census-data` - US Census trade data
-- `GET /exchange-rates` - Currency exchange rates
-- `GET /commodity-prices` - Commodity prices
-- `GET /trade-news` - Trade news and updates
-
-### African Markets
-- `GET /african-markets` - Comprehensive African market intelligence
-- `GET /custom-report` - Custom market analysis reports
-
-## 📈 Premium Services
-
-### 1. Custom Market Intelligence Reports
-- **Price**: $500-2000 per report
-- **Features**: Executive summaries, price analysis, supply chain insights, risk assessments
-
-### 2. Consulting Services
-- **Price**: $500/hour
-- **Features**: Market entry strategy, supplier identification, buyer matching
-
-### 3. Training Modules
-- **Price**: $299/course
-- **Features**: AGOA compliance, market analysis, negotiation skills
-
-### 4. Data Products
-- **Price**: Subscription model
-- **Features**: Real-time data feeds, market alerts, trend analysis

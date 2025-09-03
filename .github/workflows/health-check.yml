@@ -11,12 +11,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.10" }
+        with: 
+          python-version: "3.10"
+          cache: 'pip'
       - run: pip install -r requirements.txt
       - name: Run health API probe
         run: |
           python - <<'PY'
-          import os, sys, time, requests
+          import os, sys, time, requests, json
           url = os.environ.get("HEALTH_API_URL")
           if not url:
               print("HEALTH_API_URL not set"); sys.exit(2)
@@ -26,7 +28,27 @@ jobs:
               r = requests.get(health_url, timeout=15)
               dt = (time.time()-start)*1000
               print(f"{health_url} -> {r.status_code} in {dt:.0f}ms")
+              response_data = r.json()
+              print(f"Response: {json.dumps(response_data, indent=2)}")
+              
+              # Structured logging
+              log_data = {
+                  "timestamp": time.time(),
+                  "url": health_url,
+                  "status_code": r.status_code,
+                  "response_time_ms": dt,
+                  "response": response_data
+              }
+              print(f"STRUCTURED_LOG: {json.dumps(log_data)}")
+              
               sys.exit(0 if r.ok else 1)
           except Exception as e:
-              print("Probe failed:", e); sys.exit(3)
+              print("Probe failed:", e)
+              log_data = {
+                  "timestamp": time.time(),
+                  "url": health_url,
+                  "error": str(e)
+              }
+              print(f"STRUCTURED_LOG: {json.dumps(log_data)}")
+              sys.exit(3)
           PY

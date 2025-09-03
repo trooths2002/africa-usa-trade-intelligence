@@ -3,20 +3,42 @@
 World Bank Data Ingestion Job
 Fetches and caches World Bank commodity price data
 """
-import sys
 import os
-
-# Add the project root to the Python path
-project_root = os.path.join(os.path.dirname(__file__), '..', '..', '..')
-project_root = os.path.abspath(project_root)
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 import requests
 import pandas as pd
 from datetime import datetime
 from sqlalchemy import create_engine
-from src.config.settings import DATABASE_URL
+from config.settings import DATABASE_URL
+import time
+import random
+
+def fetch_with_retry(url, params, max_retries=3):
+    """
+    Fetch data with exponential backoff retry logic
+    """
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(url, params=params, timeout=30)
+            if response.status_code == 200:
+                return response
+            elif response.status_code in [429, 500, 502, 503, 504]:
+                # Retryable errors
+                if attempt < max_retries - 1:
+                    wait_time = (2 ** attempt) + random.uniform(0, 1)
+                    print(f"Attempt {attempt + 1} failed with status {response.status_code}. Retrying in {wait_time:.2f}s...")
+                    time.sleep(wait_time)
+                    continue
+            # Non-retryable error or final attempt
+            return response
+        except requests.exceptions.RequestException as e:
+            if attempt < max_retries - 1:
+                wait_time = (2 ** attempt) + random.uniform(0, 1)
+                print(f"Attempt {attempt + 1} failed with exception: {e}. Retrying in {wait_time:.2f}s...")
+                time.sleep(wait_time)
+                continue
+            else:
+                raise
+    return None
 
 def fetch_world_bank_data(indicator, country="WLD", start_year="2020", end_year="2025"):
     """
@@ -30,11 +52,14 @@ def fetch_world_bank_data(indicator, country="WLD", start_year="2020", end_year=
             "per_page": "1000"
         }
         
-        response = requests.get(url, params=params, timeout=30)
-        if response.status_code == 200:
+        response = fetch_with_retry(url, params)
+        if response and response.status_code == 200:
             return response.json()
-        else:
+        elif response:
             print(f"Failed to fetch World Bank data: {response.status_code}")
+            return None
+        else:
+            print("Failed to fetch World Bank data after retries")
             return None
     except Exception as e:
         print(f"Error fetching World Bank data: {e}")
