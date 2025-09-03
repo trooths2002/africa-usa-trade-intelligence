@@ -3,7 +3,12 @@
 Arbitrage Engine
 Calculates price differences and identifies arbitrage opportunities
 """
+import sys
 import os
+
+# Add the project root to the Python path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+
 import pandas as pd
 from datetime import datetime
 from sqlalchemy import create_engine

@@ -3,7 +3,12 @@
 Census Data Ingestion Job
 Fetches and caches US Census data for trade intelligence
 """
+import sys
 import os
+
+# Add the project root to the Python path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+
 import requests
 import pandas as pd
 from datetime import datetime
@@ -21,7 +26,7 @@ def fetch_census_data():
             "get": "YEAR,MONTH,STATE,PRODUCTCODE,PRODUCTDESCRIPTION,GENERICDESCRIPTION,VALUE",
             "YEAR": "2023",
             "MONTH": "12",
-            " PRODUCTCODE": "0701"  # Example: Live cattle
+            "PRODUCTCODE": "0701"  # Example: Live cattle
         }
         
         response = requests.get(url, params=params, timeout=30)

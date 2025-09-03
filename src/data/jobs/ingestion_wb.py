@@ -3,7 +3,12 @@
 World Bank Data Ingestion Job
 Fetches and caches World Bank commodity price data
 """
+import sys
 import os
+
+# Add the project root to the Python path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+
 import requests
 import pandas as pd
 from datetime import datetime
