@@ -47,13 +47,8 @@ if "loaded_user_state" not in st.session_state:
     st.session_state.loaded_user_state = True
 
 
-# Password protection - NEW: Import and check password
-from src.config.settings import APP_LOGIN_PASSWORD, DEFAULT_USER_ID
-
-# NEW: Password gate - early in app execution
-pw = st.text_input("Password", type="password")
-if pw != APP_LOGIN_PASSWORD:
-    st.stop()
+# Password protection - REMOVED duplicate check
+# The password check is already handled above with session state
 
 # Page configuration
 st.set_page_config(
@@ -114,14 +109,16 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# API Configuration - Use environment variable or default to Render deployment
-API_BASE_URL = os.getenv("STREAMLIT_API_URL", "https://africa-usa-trade-intelligence.onrender.com")
+# API Configuration - Use separate environment variables for different services
+DASHBOARD_URL = os.getenv("DASHBOARD_URL", "https://africa-usa-trade-intelligence.onrender.com")
+API_BASE_URL = os.getenv("API_BASE_URL", "https://africa-usa-trade-intelligence.onrender.com")
+HEALTH_API_URL = os.getenv("HEALTH_API_URL", "https://africa-usa-trade-intelligence.onrender.com")
 
 # Utility functions
 def test_api_connection():
     """Test if the API is reachable"""
     try:
-        response = requests.get(f"{API_BASE_URL}/health", timeout=10)
+        response = requests.get(f"{HEALTH_API_URL}/health", timeout=10)
         return response.status_code == 200, response.json() if response.status_code == 200 else None
     except Exception as e:
         return False, str(e)

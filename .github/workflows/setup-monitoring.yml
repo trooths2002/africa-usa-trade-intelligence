@@ -1,0 +1,22 @@
+name: Setup Monitoring
+on:
+  workflow_dispatch:
+  deployment_status:
+jobs:
+  setup-monitoring:
+    runs-on: ubuntu-latest
+    if: github.event.deployment_status.state == 'success'
+    env:
+      UPTIMEROBOT_API_KEY: ${{ secrets.UPTIMEROBOT_API_KEY }}
+      STREAMLIT_API_URL: ${{ secrets.STREAMLIT_API_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Setup UptimeRobot monitoring
+        run: |
+          python scripts/setup_uptime_robot.py

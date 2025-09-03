@@ -10,8 +10,14 @@ services:
         sync: false
       - key: DATABASE_URL
         sync: false
-      - key: STREAMLIT_API_URL
+      - key: DASHBOARD_URL
         sync: false
+      - key: API_BASE_URL
+        sync: false
+      - key: HEALTH_API_URL
+        sync: false
+      - key: PYTHON_VERSION
+        value: 3.10.8
 
   - type: web
     name: ausa-health
@@ -19,3 +25,6 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: bash bin/start-health.sh
     plan: free
+    envVars:
+      - key: PORT
+        value: 8000

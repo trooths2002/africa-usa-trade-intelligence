@@ -1,0 +1,31 @@
+name: Weekly Database Backup
+on:
+  schedule:
+    - cron: "0 2 * * 0"  # Every Sunday at 2 AM UTC
+  workflow_dispatch:
+jobs:
+  backup-database:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      - name: Run database backup
+        run: |
+          python scripts/backup_database.py
+      - name: Upload backup as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-backup
+          path: database_backup_*.sql
+          retention-days: 30

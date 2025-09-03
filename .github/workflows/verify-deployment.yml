@@ -1,0 +1,29 @@
+name: Verify Deployment
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'scripts/verify_deployment.py'
+jobs:
+  verify-deployment:
+    runs-on: ubuntu-latest
+    env:
+      APP_LOGIN_PASSWORD: ${{ secrets.APP_LOGIN_PASSWORD }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      STREAMLIT_API_URL: ${{ secrets.STREAMLIT_API_URL }}
+      UPTIMEROBOT_API_KEY: ${{ secrets.UPTIMEROBOT_API_KEY }}
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Run deployment verification
+        run: |
+          python scripts/verify_deployment.py
