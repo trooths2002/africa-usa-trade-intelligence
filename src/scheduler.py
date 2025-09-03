@@ -7,11 +7,11 @@ import time
 import schedule
 import threading
 from datetime import datetime
-from src.data.jobs.ingestion_census import main as run_census_ingestion
-from src.data.jobs.ingestion_wb import main as run_world_bank_ingestion
-from src.data.jobs.ingestion_fred import main as run_fred_ingestion
-from src.data.jobs.fx_rates import main as run_fx_rates_ingestion
-from src.data.jobs.refresh_arbitrage import main as run_arbitrage_calculation
+from data.jobs.ingestion_census import main as run_census_ingestion
+from data.jobs.ingestion_wb import main as run_world_bank_ingestion
+from data.jobs.ingestion_fred import main as run_fred_ingestion
+from data.jobs.fx_rates import main as run_fx_rates_ingestion
+from data.jobs.refresh_arbitrage import main as run_arbitrage_calculation
 
 def run_scheduler():
     """
