@@ -7,7 +7,10 @@ import sys
 import os
 
 # Add the project root to the Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+project_root = os.path.join(os.path.dirname(__file__), '..', '..', '..')
+project_root = os.path.abspath(project_root)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 import pandas as pd
 from datetime import datetime
