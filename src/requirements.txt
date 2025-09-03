@@ -31,3 +31,7 @@ redis>=5.0.0
 
 # Plotly for data visualization
 plotly>=5.18.0
+
+# Database support
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0

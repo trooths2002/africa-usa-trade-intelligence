@@ -1,0 +1,31 @@
+name: Health check
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/30 * * * *"  # every 30 min
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    env:
+      STREAMLIT_API_URL: ${{ secrets.STREAMLIT_API_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.10" }
+      - run: pip install -r requirements.txt
+      - name: Run dashboard probe
+        run: |
+          python - <<'PY'
+          import os, sys, time, requests
+          url = os.environ.get("STREAMLIT_API_URL")
+          if not url:
+              print("STREAMLIT_API_URL not set"); sys.exit(2)
+          start = time.time()
+          try:
+              r = requests.get(url, timeout=15)
+              dt = (time.time()-start)*1000
+              print(f"{url} -> {r.status_code} in {dt:.0f}ms")
+              sys.exit(0 if r.ok else 1)
+          except Exception as e:
+              print("Probe failed:", e); sys.exit(3)
+          PY

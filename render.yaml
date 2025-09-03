@@ -1,9 +1,21 @@
 services:
   - type: web
-    name: africa-usa-trade-intelligence
+    name: ausa-dashboard
     env: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "uvicorn health_check:app --host 0.0.0.0 --port $PORT"
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash bin/start-dashboard.sh
+    plan: free
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.10.8
+      - key: APP_LOGIN_PASSWORD
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: STREAMLIT_API_URL
+        sync: false
+
+  - type: web
+    name: ausa-health
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash bin/start-health.sh
+    plan: free

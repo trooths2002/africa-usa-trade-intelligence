@@ -1,1 +1,2 @@
-web: streamlit run src/web_app/dashboard/deployed_main.py --server.port=$PORT
+web: bash bin/start-dashboard.sh
+health: bash bin/start-health.sh

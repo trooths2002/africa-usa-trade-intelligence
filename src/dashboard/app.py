@@ -47,6 +47,14 @@ if "loaded_user_state" not in st.session_state:
     st.session_state.loaded_user_state = True
 
 
+# Password protection - NEW: Import and check password
+from src.config.settings import APP_LOGIN_PASSWORD, DEFAULT_USER_ID
+
+# NEW: Password gate - early in app execution
+pw = st.text_input("Password", type="password")
+if pw != APP_LOGIN_PASSWORD:
+    st.stop()
+
 # Page configuration
 st.set_page_config(
     page_title="Africa-USA Trade Intelligence Dashboard",
