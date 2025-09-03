@@ -12,9 +12,40 @@ import time
 import os
 from dotenv import load_dotenv
 import json
+# Import database helpers for persistent user state
+try:
+    from src.dashboard.db import init_db, save_user_state, load_user_state
+except ImportError:
+    from db import init_db, save_user_state, load_user_state
+
 
 # Load environment variables
 load_dotenv()
+# Initialize database for persistent user state
+init_db()
+
+# Password-protect dashboard if APP_LOGIN_PASSWORD is set
+APP_PASSWORD = os.getenv("APP_LOGIN_PASSWORD")
+if APP_PASSWORD:
+    if "is_authed" not in st.session_state:
+        st.session_state.is_authed = False
+    if not st.session_state.is_authed:
+        pw = st.sidebar.text_input("Password", type="password")
+        if st.sidebar.button("Login"):
+            if pw == APP_PASSWORD:
+                st.session_state.is_authed = True
+            else:
+                st.error("Incorrect password")
+        st.stop()
+
+# Load saved user state (filters etc.)
+USER_ID = os.getenv("DEFAULT_USER_ID", "default_user")
+if "loaded_user_state" not in st.session_state:
+    saved_state = load_user_state(USER_ID)
+    if saved_state:
+        st.session_state.update(saved_state)
+    st.session_state.loaded_user_state = True
+
 
 # Page configuration
 st.set_page_config(
