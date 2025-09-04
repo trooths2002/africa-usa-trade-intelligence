@@ -1,0 +1,80 @@
+name: MCP Automation
+
+on:
+  schedule:
+    # Run every hour
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  mcp-quick-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then
+          pip install -r requirements.txt
+        fi
+        if [ -f src/requirements.txt ]; then
+          pip install -r src/requirements.txt
+        fi
+        
+    - name: Run quick scan (non-blocking)
+      id: scan
+      continue-on-error: true
+      run: |
+        python scripts/automation/run_quick_scan.py
+        echo "scan_exit_code=$?" >> $GITHUB_OUTPUT
+        
+    - name: Generate email summary
+      run: |
+        python scripts/automation/send_email_summary.py
+        
+    - name: Upload logs as artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: automation-logs-${{ github.run_number }}
+        path: |
+          automation_logs.log
+          scan_report.json
+          email_summary.json
+        retention-days: 30
+        
+    - name: Send email notification
+      uses: dawidd6/action-send-mail@v3
+      if: always()
+      with:
+        server_address: ${{ secrets.SMTP_HOST }}
+        server_port: ${{ secrets.SMTP_PORT }}
+        username: ${{ secrets.SMTP_USERNAME }}
+        password: ${{ secrets.SMTP_PASSWORD }}
+        subject: "Africa-USA Trade Intelligence - Automation Report"
+        to: ${{ secrets.NOTIFY_EMAIL_TO }}
+        from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+        html_body: |
+          <h2>MCP Automation Workflow Report</h2>
+          <p><strong>Workflow Run:</strong> ${{ github.run_number }}</p>
+          <p><strong>Run Time:</strong> ${{ github.workflow }}</p>
+          <p><strong>Status:</strong> ${{ job.status }}</p>
+          <p><strong>Repository:</strong> ${{ github.repository }}</p>
+          
+          <h3>Quick Scan Results</h3>
+          <p>Scan Exit Code: ${{ steps.scan.outputs.scan_exit_code }}</p>
+          
+          <hr>
+          <p><em>View detailed logs in the workflow artifacts.</em></p>
+          <p><a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">View Workflow Run</a></p>
+        attachments: |
+          automation_logs.log
+          scan_report.json
