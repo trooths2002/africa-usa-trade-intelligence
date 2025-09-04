@@ -100,6 +100,73 @@ Set up external monitoring (e.g., UptimeRobot) to monitor:
 2. The hosting platform will automatically redeploy
 3. Monitor the deployment logs for any issues
 
+## SMTP Email Configuration
+
+The MCP automation workflow includes email notifications for daily summaries and alerts. Configure SMTP settings using GitHub repository secrets.
+
+### Required GitHub Secrets
+
+Add the following secrets to your GitHub repository (Settings > Secrets and variables > Actions):
+
+| Secret Name | Description | Example |
+|-------------|-------------|---------|
+| `SMTP_HOST` | SMTP server hostname | `smtp.gmail.com` |
+| `SMTP_PORT` | SMTP server port | `587` |
+| `SMTP_USERNAME` | SMTP username (usually your email) | `your-email@gmail.com` |
+| `SMTP_PASSWORD` | SMTP password or app password | `your-app-password` |
+| `NOTIFY_EMAIL_TO` | Recipient email address | `recipient@company.com` |
+| `NOTIFY_EMAIL_FROM` | Sender email address | `your-email@gmail.com` |
+
+### Gmail SMTP Configuration
+
+For Gmail users, follow these steps:
+
+1. **Enable 2-Factor Authentication** on your Gmail account
+2. **Generate App Password**:
+   - Go to Google Account settings
+   - Navigate to Security > 2-Step Verification > App passwords
+   - Generate a new app password for "Mail"
+   - Use this app password as `SMTP_PASSWORD` (not your regular Gmail password)
+
+3. **Gmail SMTP Settings**:
+   - `SMTP_HOST`: `smtp.gmail.com`
+   - `SMTP_PORT`: `587`
+   - `SMTP_USERNAME`: Your Gmail address
+   - `SMTP_PASSWORD`: The generated app password
+
+### Other Email Providers
+
+| Provider | SMTP Host | Port | Security |
+|----------|-----------|------|----------|
+| Gmail | smtp.gmail.com | 587 | TLS |
+| Outlook/Hotmail | smtp.live.com | 587 | TLS |
+| Yahoo | smtp.mail.yahoo.com | 587 | TLS |
+| iCloud | smtp.mail.me.com | 587 | TLS |
+
+### Testing Email Configuration
+
+1. **Manual Workflow Trigger**: Go to Actions tab in GitHub and manually trigger the "MCP Automation with SMTP Email" workflow
+2. **Check Workflow Logs**: Review the workflow execution logs for any email sending errors
+3. **Verify Email Receipt**: Confirm the summary email is received at the specified recipient address
+
+### Email Content
+
+The automated emails include:
+- Daily trade data collection summary
+- Market intelligence analysis results
+- System health status
+- Recent arbitrage opportunities
+- New supplier/buyer intelligence updates
+
+### Troubleshooting Email Issues
+
+Common issues and solutions:
+
+1. **Authentication Failed**: Verify app password is correct and 2FA is enabled
+2. **Connection Timeout**: Check SMTP host and port settings
+3. **Recipient Not Receiving**: Check spam/junk folders
+4. **Invalid Credentials**: Ensure secrets are set correctly in GitHub repository
+
 ## Support
 
 For issues with deployment, contact the development team or check the GitHub Issues section of this repository.

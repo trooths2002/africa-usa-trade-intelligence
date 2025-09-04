@@ -1,0 +1,296 @@
+# MCP Automation Email Setup Guide
+
+This guide provides step-by-step instructions for setting up automated email notifications for the Africa-USA Trade Intelligence Platform.
+
+## Overview
+
+The MCP automation workflow sends hourly email summaries containing:
+- Trade data collection status
+- Market intelligence analysis results
+- System health monitoring
+- Arbitrage opportunities identified
+- Supplier/buyer intelligence updates
+
+## Quick Setup Checklist
+
+- [ ] Enable 2-Factor Authentication on your email account
+- [ ] Generate email app password (if using Gmail/Outlook)
+- [ ] Add SMTP secrets to GitHub repository
+- [ ] Test the automation workflow
+- [ ] Verify email reception
+
+## Detailed Setup Instructions
+
+### Step 1: Choose Your Email Provider
+
+The automation supports any SMTP-compatible email provider. Popular options:
+
+- **Gmail** (Recommended - Free with excellent deliverability)
+- **Outlook/Hotmail** (Free Microsoft email service)
+- **Yahoo Mail** (Free with good SMTP support)
+- **Custom/Corporate email** (If your organization provides SMTP access)
+
+### Step 2: Gmail Setup (Recommended)
+
+#### 2.1 Enable 2-Factor Authentication
+
+1. Go to [Google Account Settings](https://myaccount.google.com)
+2. Click on "Security" in the left sidebar
+3. Under "Signing in to Google", click "2-Step Verification"
+4. Follow the prompts to enable 2FA using your phone number
+
+#### 2.2 Generate App Password
+
+1. In the same Security section, find "2-Step Verification"
+2. Scroll down and click "App passwords"
+3. Select "Mail" as the app type
+4. Click "Generate"
+5. **Copy the 16-character app password** (you'll need this for GitHub secrets)
+
+⚠️ **Important**: Use the app password, NOT your regular Gmail password
+
+#### 2.3 Gmail SMTP Settings
+
+- **SMTP Host**: `smtp.gmail.com`
+- **SMTP Port**: `587`
+- **Username**: Your full Gmail address (e.g., `youremail@gmail.com`)
+- **Password**: The 16-character app password from Step 2.2
+
+### Step 3: Alternative Email Providers
+
+#### Outlook/Hotmail Setup
+
+1. Enable 2FA in Microsoft Account Security settings
+2. Generate app password for "Mail"
+3. Use these settings:
+   - **SMTP Host**: `smtp.live.com`
+   - **SMTP Port**: `587`
+   - **Username**: Your Outlook email address
+   - **Password**: Generated app password
+
+#### Yahoo Mail Setup
+
+1. Enable 2FA in Yahoo Account Security
+2. Generate app password for "Mail app"
+3. Use these settings:
+   - **SMTP Host**: `smtp.mail.yahoo.com`
+   - **SMTP Port**: `587`
+   - **Username**: Your Yahoo email address
+   - **Password**: Generated app password
+
+#### Custom/Corporate Email
+
+Contact your IT administrator for SMTP settings:
+- SMTP server hostname
+- SMTP port (usually 587 or 465)
+- Authentication requirements
+- Security protocol (TLS/SSL)
+
+### Step 4: Configure GitHub Repository Secrets
+
+1. Go to your GitHub repository
+2. Click on "Settings" tab
+3. In the left sidebar, click "Secrets and variables" > "Actions"
+4. Click "New repository secret" for each of the following:
+
+#### Required Secrets:
+
+| Secret Name | Value | Example |
+|-------------|-------|---------|
+| `SMTP_HOST` | Your SMTP server | `smtp.gmail.com` |
+| `SMTP_PORT` | SMTP port number | `587` |
+| `SMTP_USERNAME` | Your email address | `your-email@gmail.com` |
+| `SMTP_PASSWORD` | App password | `abcd efgh ijkl mnop` |
+| `NOTIFY_EMAIL_TO` | Recipient email | `notifications@yourcompany.com` |
+| `NOTIFY_EMAIL_FROM` | Sender email | `your-email@gmail.com` |
+
+### Step 5: Test the Configuration
+
+#### 5.1 Manual Workflow Test
+
+1. Go to the "Actions" tab in your GitHub repository
+2. Find "MCP Automation with SMTP Email" workflow
+3. Click "Run workflow" button
+4. Check the "Force send email notification" option
+5. Click "Run workflow"
+
+#### 5.2 Monitor Workflow Execution
+
+1. Watch the workflow run in real-time
+2. Check each step for errors
+3. Look for the "Send Email Summary via SMTP" step completion
+4. Review logs if any errors occur
+
+#### 5.3 Verify Email Reception
+
+1. Check your designated recipient email address
+2. Look in spam/junk folders if not in inbox
+3. Verify the email contains the expected trade intelligence summary
+
+### Step 6: Scheduled Operation
+
+Once testing is successful, the workflow will automatically:
+- Run every hour at the top of the hour
+- Collect trade intelligence data
+- Generate summary reports
+- Send email notifications
+- Upload artifacts to GitHub
+
+## Customization Options
+
+### Email Frequency
+
+To change from hourly to different intervals, edit `.github/workflows/mcp-automation.yml`:
+
+```yaml
+schedule:
+  # Daily at 9 AM UTC
+  - cron: '0 9 * * *'
+  
+  # Every 6 hours
+  - cron: '0 */6 * * *'
+  
+  # Weekdays only at 6 AM UTC
+  - cron: '0 6 * * 1-5'
+```
+
+### Email Recipients
+
+To send to multiple recipients, update the `NOTIFY_EMAIL_TO` secret:
+```
+recipient1@company.com,recipient2@company.com,recipient3@company.com
+```
+
+### Email Content
+
+The email content is generated by `scripts/automation/send_email_summary.py`. You can modify this script to:
+- Add more data sources
+- Change the email format
+- Include additional metrics
+- Customize the summary style
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. Authentication Failed
+```
+Error: SMTP authentication failed
+```
+**Solution**: 
+- Verify app password is correct
+- Ensure 2FA is enabled on your email account
+- Check username format (full email address)
+
+#### 2. Connection Timeout
+```
+Error: Connection timed out
+```
+**Solution**:
+- Verify SMTP host and port settings
+- Check if your network allows SMTP connections
+- Try different ports (587, 465, 25)
+
+#### 3. Email Not Received
+**Solution**:
+- Check spam/junk folders
+- Verify recipient email address is correct
+- Check email provider's sending limits
+- Review workflow logs for sending confirmation
+
+#### 4. Invalid Secrets
+```
+Error: Required secret not found
+```
+**Solution**:
+- Verify all 6 secrets are set in GitHub repository
+- Check secret names match exactly (case-sensitive)
+- Ensure no extra spaces in secret values
+
+### Debug Steps
+
+1. **Check Workflow Logs**:
+   - Go to Actions > Workflow run > View logs
+   - Look for error messages in the email sending step
+
+2. **Test SMTP Settings Locally**:
+   ```python
+   import smtplib
+   from email.mime.text import MIMEText
+   
+   # Test connection with your settings
+   server = smtplib.SMTP('smtp.gmail.com', 587)
+   server.starttls()
+   server.login('your-email@gmail.com', 'your-app-password')
+   server.quit()
+   print("SMTP connection successful!")
+   ```
+
+3. **Verify Email Provider Settings**:
+   - Check your email provider's SMTP documentation
+   - Confirm SMTP is enabled for your account
+   - Review any security restrictions
+
+## Advanced Configuration
+
+### Custom Email Templates
+
+Modify `scripts/automation/send_email_summary.py` to use HTML templates:
+
+```python
+def generate_html_email():
+    return """
+    <html>
+    <body>
+        <h2>Trade Intelligence Summary</h2>
+        <p>Your custom HTML content here...</p>
+    </body>
+    </html>
+    """
+```
+
+### Multiple Email Lists
+
+Set up different notification lists for different types of alerts:
+- Daily summaries: Management team
+- Urgent alerts: Operations team  
+- System issues: IT team
+
+### Email Analytics
+
+Track email engagement by:
+- Adding tracking pixels
+- Using email service APIs
+- Monitoring delivery rates
+- Analyzing open/click rates
+
+## Security Best Practices
+
+1. **Use App Passwords**: Never use your main email password
+2. **Limit Permissions**: Use dedicated email accounts for automation
+3. **Monitor Usage**: Review email sending logs regularly
+4. **Rotate Credentials**: Update app passwords periodically
+5. **Secure Secrets**: Keep GitHub secrets private and secure
+
+## Next Steps
+
+Once email automation is working:
+
+1. **Monitor Performance**: Track email delivery success rates
+2. **Optimize Content**: Refine email content based on recipient feedback
+3. **Scale Notifications**: Add more notification types as needed
+4. **Integration**: Connect with other alerting systems
+5. **Analytics**: Set up dashboards to monitor email engagement
+
+## Support
+
+For additional help:
+- Review GitHub Actions workflow logs
+- Check email provider documentation
+- Contact repository maintainers
+- Submit issues in the GitHub repository
+
+---
+
+**Free World Trade Inc. - Africa-USA Trade Intelligence Platform**
+*Automated Email Notification System*
