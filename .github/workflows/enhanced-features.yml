@@ -1,5 +1,4 @@
 name: Enhanced Features Pipeline
-
 on:
   push:
     branches: [ main ]
@@ -10,20 +9,19 @@ on:
 jobs:
   test-enhanced-features:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
-
+    
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: "3.10"
-
+    
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r src/requirements.txt
-
+    
     - name: Test African Market Intelligence
       run: |
         # Start the API server in the background
@@ -35,21 +33,19 @@ jobs:
         
         # Test custom report endpoint
         curl -f "http://localhost:8000/custom-report?client_name=TestClient&product_focus=coffee" || exit 1
-
+    
     - name: Test Data Collection Enhancements
       run: |
-        python -c "
+        python << 'EOF'
 from src.data.collector import DataCollector
 collector = DataCollector()
-
 # Test African exchange data
 african_data = collector.get_african_exchange_data()
 print('African exchange data collected successfully')
-
 # Test social sentiment
 sentiment_data = collector.get_social_sentiment(['coffee', 'cocoa'])
 print('Social sentiment data collected successfully')
-"
+EOF
 
   deploy-enhanced-dashboard:
     needs: test-enhanced-features
@@ -57,10 +53,9 @@ print('Social sentiment data collected successfully')
     if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
-
     steps:
     - uses: actions/checkout@v4
-
+    
     - name: Deploy Enhanced Dashboard
       run: |
         echo "# Enhanced Dashboard Deployment" > enhanced_dashboard_deployment.md
