@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 Lightweight MCP orchestrator for GitHub Actions.
-
 - Maintains a single issue as the 'MCP Task Queue' that contains current tasks and status.
 - Checks deployed health endpoint (if reachable) and writes summary into the task queue.
 - If unhealthy, creates a clearly labeled issue requesting human or automated agent attention.
@@ -13,6 +12,7 @@ import sys
 import time
 import requests
 from datetime import datetime
+import github
 from github import Github
 
 REPO_FULL = os.environ.get("GITHUB_REPOSITORY")  # e.g. owner/repo
@@ -24,7 +24,9 @@ if not TOKEN or not REPO_FULL:
     print("GITHUB_TOKEN or GITHUB_REPOSITORY not set. Exiting.")
     sys.exit(1)
 
-gh = Github(TOKEN)
+# Use new authentication method to avoid deprecation warning
+auth = github.Auth.Token(TOKEN)
+gh = Github(auth=auth)
 repo = gh.get_repo(REPO_FULL)
 
 def get_or_create_task_issue():
@@ -119,8 +121,8 @@ def main():
     health = check_deployed_health()
     update_issue(issue)
     maybe_open_incident(health)
-    # Optionally leave a timestamp comment for traceability
-    issue.create_comment(f"MCP Orchestrator ran at {datetime.utcnow().isoformat()}Z")
+    # DISABLED: Commenting is disabled on issues with >2500 comments
+    # issue.create_comment(f"MCP Orchestrator ran at {datetime.utcnow().isoformat()}Z")
     print("Orchestrator run complete.")
 
 if __name__ == "__main__":
