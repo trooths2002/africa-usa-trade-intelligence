@@ -36,16 +36,7 @@ jobs:
     
     - name: Test Data Collection Enhancements
       run: |
-        python << 'EOF'
-from src.data.collector import DataCollector
-collector = DataCollector()
-# Test African exchange data
-african_data = collector.get_african_exchange_data()
-print('African exchange data collected successfully')
-# Test social sentiment
-sentiment_data = collector.get_social_sentiment(['coffee', 'cocoa'])
-print('Social sentiment data collected successfully')
-EOF
+        python -c "from src.data.collector import DataCollector; collector = DataCollector(); african_data = collector.get_african_exchange_data(); print('African exchange data collected successfully'); sentiment_data = collector.get_social_sentiment(['coffee', 'cocoa']); print('Social sentiment data collected successfully')"
 
   deploy-enhanced-dashboard:
     needs: test-enhanced-features
