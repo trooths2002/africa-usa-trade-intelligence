@@ -1,21 +1,17 @@
 name: Dashboard Monitoring
-
 on:
   schedule:
     # Run every 30 minutes
     - cron: '*/30 * * * *'
   workflow_dispatch:
-
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
+  group: dashboard-monitoring-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   monitor-dashboard:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -24,17 +20,14 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             src/requirements.txt
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
       - name: Install Chrome for Selenium
         run: |
           sudo apt-get update
           sudo apt-get install -y chromium-chromedriver
-
       - name: Run dashboard monitoring
         env:
           DASHBOARD_URL: ${{ secrets.DASHBOARD_URL || 'https://africa-usa-trade-intelligence.onrender.com' }}
@@ -42,7 +35,6 @@ jobs:
           DASHBOARD_MONITOR_INTERVAL: "1800"  # 30 minutes
         run: |
           python src/monitoring/dashboard_monitor.py
-
       - name: Report status
         run: |
           echo "Dashboard monitoring check completed"
