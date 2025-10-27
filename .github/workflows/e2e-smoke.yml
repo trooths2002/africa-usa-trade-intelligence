@@ -1,0 +1,109 @@
+name: "E2E Smoke Tests"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_call:
+    inputs:
+      environment:
+        required: false
+        type: string
+        default: 'production'
+      deployment_url:
+        required: false
+        type: string
+        default: 'https://africa-usa-trade-intelligence.onrender.com'
+
+jobs:
+  smoke-tests:
+    name: End-to-End Smoke Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install minimal dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests pytest httpx
+
+    - name: Test API Health Endpoint
+      run: |
+        python -c "
+        import requests
+        import sys
+        url = '${{ inputs.deployment_url || vars.DEPLOYED_URL || ''https://africa-usa-trade-intelligence.onrender.com'' }}/health'
+        try:
+            response = requests.get(url, timeout=30)
+            print(f'Health check status: {response.status_code}')
+            if response.status_code != 200:
+                sys.exit(1)
+            print('✅ API health check passed')
+        except Exception as e:
+            print(f'❌ API health check failed: {e}')
+            sys.exit(1)
+        "
+
+    - name: Test Dashboard Accessibility
+      run: |
+        python -c "
+        import requests
+        import sys
+        url = '${{ inputs.deployment_url || vars.DEPLOYED_URL || ''https://africa-usa-trade-intelligence.onrender.com'' }}'
+        try:
+            response = requests.get(url, timeout=30)
+            print(f'Dashboard status: {response.status_code}')
+            if response.status_code != 200:
+                sys.exit(1)
+            print('✅ Dashboard accessibility check passed')
+        except Exception as e:
+            print(f'❌ Dashboard accessibility check failed: {e}')
+            sys.exit(1)
+        "
+
+    - name: Test Critical API Endpoints
+      run: |
+        python -c "
+        import requests
+        import sys
+        base_url = '${{ inputs.deployment_url || vars.DEPLOYED_URL || ''https://africa-usa-trade-intelligence.onrender.com'' }}'
+        endpoints = ['/api/status', '/api/data/summary']
+        failed = False
+        
+        for endpoint in endpoints:
+            try:
+                url = f'{base_url}{endpoint}'
+                response = requests.get(url, timeout=15)
+                print(f'{endpoint}: {response.status_code}')
+                if response.status_code >= 500:
+                    print(f'❌ Critical error at {endpoint}')
+                    failed = True
+                elif response.status_code >= 400:
+                    print(f'⚠️  Client error at {endpoint} (may be expected)')
+                else:
+                    print(f'✅ {endpoint} responded successfully')
+            except Exception as e:
+                print(f'⚠️  {endpoint} not available: {e}')
+        
+        if failed:
+            sys.exit(1)
+        print('✅ All critical endpoints tested')
+        "
+
+    - name: Report Results
+      if: always()
+      run: |
+        if [ ${{ job.status }} = 'success' ]; then
+          echo "🎉 All smoke tests passed for ${{ inputs.environment || 'production' }} environment"
+        else
+          echo "❌ Smoke tests failed for ${{ inputs.environment || 'production' }} environment"
+        fi
